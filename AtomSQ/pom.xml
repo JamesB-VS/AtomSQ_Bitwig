@@ -33,8 +33,10 @@
                <configuration>
                   <optimize>true</optimize>
                   <fork>true</fork>
-                  <source>17</source>
-                  <target>17</target>
+                  <!-- <source>1.8</source>
+                  <target>1.8</target> -->
+				  <!-- adding the release here, instead of source/target, removed all errors. to see errors, comment this out and uncommend the above lines! -->
+				  <release>17</release>
                   <encoding>UTF-8</encoding>
                   <maxmem>1024m</maxmem>
                </configuration>
