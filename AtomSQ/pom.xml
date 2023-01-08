@@ -33,8 +33,8 @@
                <configuration>
                   <optimize>true</optimize>
                   <fork>true</fork>
-                  <source>1.8</source>
-                  <target>1.8</target>
+                  <source>17</source>
+                  <target>17</target>
                   <encoding>UTF-8</encoding>
                   <maxmem>1024m</maxmem>
                </configuration>
@@ -53,7 +53,8 @@
 						</goals>
 						<configuration>
 							<sourceFile>${project.build.directory}/${project.build.finalName}.jar</sourceFile>
-							<destinationFile>${project.build.directory}/AtomSQ.bwextension</destinationFile>
+							<!-- no idea how to set this as a variable for now -->
+							<destinationFile>C:\Users\Nova\Documents\Bitwig Studio\Extensions/AtomSQ.bwextension</destinationFile>
 						</configuration>
 					</execution>
 				</executions>
