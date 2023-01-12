@@ -1,31 +1,31 @@
-// Written by James Bell
-// (c) 2023
+// Written by Jürgen Moßgraber - mossgrabers.de
+// (c) 2019
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package com.presonus;
-
-import java.util.UUID;
+package de.mossgrabers;
 
 import com.bitwig.extension.api.PlatformType;
 import com.bitwig.extension.controller.AutoDetectionMidiPortNamesList;
 import com.bitwig.extension.controller.ControllerExtensionDefinition;
 import com.bitwig.extension.controller.api.ControllerHost;
 
+import java.util.UUID;
+
 
 /**
  * The description of the extension.
  *
- * @author
+ * @author J&uuml;rgen Mo&szlig;graber
  */
-public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
+public class MOXFExtensionExtensionDefinition extends ControllerExtensionDefinition
 {
-    private static final UUID DRIVER_ID = UUID.fromString ("2cef2107-b7a6-4a39-9542-2025694e2d97");
+    private static final UUID DRIVER_ID = UUID.fromString ("2f4727a3-9e7f-4908-8c59-6c2759e577c0");
 
 
     /**
      * Constructor.
      */
-    public AtomSQExtensionDefinition ()
+    public MOXFExtensionExtensionDefinition ()
     {
         // Intentionally empty
     }
@@ -35,7 +35,7 @@ public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
     @Override
     public String getName ()
     {
-        return "AtomSQ";
+        return "MOXF";
     }
 
 
@@ -43,7 +43,7 @@ public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
     @Override
     public String getAuthor ()
     {
-        return "James Bell";
+        return "Jürgen Moßgraber";
     }
 
 
@@ -67,7 +67,7 @@ public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
     @Override
     public String getHardwareVendor ()
     {
-        return "Presonus";
+        return "Yamaha";
     }
 
 
@@ -75,7 +75,7 @@ public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
     @Override
     public String getHardwareModel ()
     {
-        return "AtomSQ (Java)";
+        return "MOXF (Java)";
     }
 
 
@@ -83,7 +83,7 @@ public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
     @Override
     public int getRequiredAPIVersion ()
     {
-        return 17;
+        return 7;
     }
 
 
@@ -91,7 +91,7 @@ public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
     @Override
     public int getNumMidiInPorts ()
     {
-        return 2;
+        return 1;
     }
 
 
@@ -99,7 +99,7 @@ public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
     @Override
     public int getNumMidiOutPorts ()
     {
-        return 2;
+        return 1;
     }
 
 
@@ -112,18 +112,18 @@ public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
 
         list.add (new String []
         {
-            "ATM SQ"
+            "MIDIIN4 (mio10)"
         }, new String []
         {
-            "MIDIIN (ATM SQ)"
+            "MIDIOUT4 (mio10)"
         });
     }
 
 
     /** {@inheritDoc} */
     @Override
-    public AtomSQExtension createInstance (final ControllerHost host)
+    public MOXFExtensionExtension createInstance (final ControllerHost host)
     {
-        return new AtomSQExtension (this, host);
+        return new MOXFExtensionExtension (this, host);
     }
 }

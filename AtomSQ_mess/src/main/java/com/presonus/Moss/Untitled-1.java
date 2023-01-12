@@ -1,8 +1,14 @@
-// Written by James Bell
-// (c) 2023
+// Written by Jürgen Moßgraber - mossgrabers.de
+// (c) 2019
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package com.presonus;
+package de.mossgrabers;
+
+import de.mossgrabers.handler.Mode;
+import de.mossgrabers.handler.ModeHandler;
+import de.mossgrabers.handler.RemoteControlHandler;
+import de.mossgrabers.handler.TrackHandler;
+import de.mossgrabers.handler.TransportHandler;
 
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import com.bitwig.extension.controller.ControllerExtension;
@@ -14,11 +20,6 @@ import com.bitwig.extension.controller.api.PinnableCursorDevice;
 import com.bitwig.extension.controller.api.Preferences;
 import com.bitwig.extension.controller.api.SettableEnumValue;
 import com.bitwig.extension.controller.api.SettableRangedValue;
-import com.presonus.handler.Mode;
-import com.presonus.handler.ModeHandler;
-import com.presonus.handler.RemoteControlHandler;
-import com.presonus.handler.TrackHandler;
-import com.presonus.handler.TransportHandler;
 
 
 /**
@@ -26,7 +27,7 @@ import com.presonus.handler.TransportHandler;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class AtomSQExtension extends ControllerExtension
+public class MOXFExtensionExtension extends ControllerExtension
 {
     private TransportHandler transportHandler;
     private ModeHandler      modeHandler;
@@ -38,7 +39,7 @@ public class AtomSQExtension extends ControllerExtension
      * @param definition The definition object
      * @param host The controller host
      */
-    protected AtomSQExtension (final AtomSQExtensionDefinition definition, final ControllerHost host)
+    protected MOXFExtensionExtension (final MOXFExtensionExtensionDefinition definition, final ControllerHost host)
     {
         super (definition, host);
     }
@@ -114,4 +115,4 @@ public class AtomSQExtension extends ControllerExtension
     {
         this.transportHandler.updateLEDs ();
     }
-}
+}s

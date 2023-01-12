@@ -4,7 +4,7 @@ load("AtomSQ_Hardware3.js");
 load("AtomSQ_Init.js");
 load("AtomSQ_MidiMap.js");
 load("AtomSQ_TransportHandler.js");
-load("AtomSQ_ModeHandler.js")
+load("AtomSQ_ModeHandler.js");
 load("AtomSQ_CursorHandler.js");
 load("AtomSQ_ModeDisplay.js");
 load("AtomSQ_ModeButtons.js");
