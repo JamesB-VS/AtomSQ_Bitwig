@@ -13,7 +13,7 @@ import com.bitwig.extension.controller.api.Track;
 import com.bitwig.extension.controller.api.TrackBank;
 import com.presonus.handler.TransportHandler;
 import com.presonus.handler.CursorHandler;
-
+//import com.presonus.handler.ModeHandler;
 
 
 public class AtomSQExtension extends ControllerExtension
@@ -22,6 +22,11 @@ public class AtomSQExtension extends ControllerExtension
 
 
    private TransportHandler transportHandler;
+   private AtomSQHardware hardware;
+ //  private ModeHandler modeHandler;
+  // private ShiftHandler shiftHandler;
+
+   //private boolean shiftOn;
    protected AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
    {
       super(definition, host);
@@ -38,7 +43,7 @@ public class AtomSQExtension extends ControllerExtension
 
       //mTransport = host.createTransport();
 
-      final AtomSQHardware hardware = new AtomSQHardware (host.getMidiOutPort (0), host.getMidiInPort (0), this::handleMidi);
+      this.hardware = new AtomSQHardware (host.getMidiOutPort (0), host.getMidiInPort (0), this::handleMidi);
       this.transportHandler = new TransportHandler (host.createTransport (), hardware);
 
      // final FollowMode followMode = cursorDevice.CursorDeviceFollowMode.FOLLOW_SELECTION;
@@ -48,7 +53,7 @@ public class AtomSQExtension extends ControllerExtension
 
       final CursorHandler cursor = new CursorHandler (cursorDevice, cursorTrack, remoteControlsBank);
    
-
+      
       //the HW init
       hardware.AtomSQ_Start(hardware.portOut);
 
@@ -73,12 +78,21 @@ public class AtomSQExtension extends ControllerExtension
    private void handleMidi(final int statusByte, final int data1, final int data2)
    {
       final ShortMidiMessage msg = new ShortMidiMessage (statusByte, data1, data2);
-      
-      // if (this.transportHandler.handleShift (msg))
-      // return
+      //this.shiftOn = shiftOn;
+      //int menumode;
+      int menumode = AtomSQHardware.ASQ_USER;
+
+      if (this.hardware.handleShift(data1, data2, false))
+      return;
       
       if (this.transportHandler.handleMidi (msg))
       return;
+
+      // if (this.modeHandler.handleMidi (msg))
+      // return;
+      
+      // if (this.hardware.HandleEncoders (msg, menumode, false))
+      // return;
 
 //   if (this.modeHandler.handleMidi (msg))
 //       return;
@@ -88,5 +102,5 @@ public class AtomSQExtension extends ControllerExtension
    }
 
 
-   private Transport mTransport;
+  // private Transport mTransport;
 }

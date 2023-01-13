@@ -1,5 +1,3 @@
-com\presonus\AtomSQHardware.class
 com\presonus\handler\CursorHandler.class
-com\presonus\AtomSQExtension.class
 com\presonus\handler\TransportHandler.class
 com\presonus\AtomSQExtensionDefinition.class
