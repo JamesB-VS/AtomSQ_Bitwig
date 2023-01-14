@@ -11,19 +11,19 @@ import com.bitwig.extension.controller.api.CursorRemoteControlsPage;
 import com.bitwig.extension.controller.api.CursorTrack;
 import com.bitwig.extension.controller.api.Track;
 import com.bitwig.extension.controller.api.TrackBank;
+
 import com.presonus.handler.TransportHandler;
 import com.presonus.handler.CursorHandler;
-//import com.presonus.handler.ModeHandler;
+import com.presonus.handler.ModeHandler;
 
 
 public class AtomSQExtension extends ControllerExtension
 {
 
-
-
    private TransportHandler transportHandler;
    private AtomSQHardware hardware;
- //  private ModeHandler modeHandler;
+   private ModeHandler modeHandler;
+   private CursorHandler cursorHandler;
   // private ShiftHandler shiftHandler;
 
    //private boolean shiftOn;
@@ -46,12 +46,14 @@ public class AtomSQExtension extends ControllerExtension
       this.hardware = new AtomSQHardware (host.getMidiOutPort (0), host.getMidiInPort (0), this::handleMidi);
       this.transportHandler = new TransportHandler (host.createTransport (), hardware);
 
-     // final FollowMode followMode = cursorDevice.CursorDeviceFollowMode.FOLLOW_SELECTION;
+      //without declaring this here, the handle Midi below fails as soon as a call gets tot he modeHandler, as it is declared as Null. 
+      this.modeHandler = new ModeHandler();
+
       final CursorTrack cursorTrack = host.createCursorTrack(2, 0);
       final CursorDevice cursorDevice = cursorTrack.createCursorDevice("Current", "Current", 8,  CursorDeviceFollowMode.FOLLOW_SELECTION);
       final CursorRemoteControlsPage remoteControlsBank = cursorDevice.createCursorRemoteControlsPage("CursorPage1", 8, "");
 
-      final CursorHandler cursor = new CursorHandler (cursorDevice, cursorTrack, remoteControlsBank);
+      this.cursorHandler = new CursorHandler (cursorDevice, cursorTrack, remoteControlsBank);
    
       
       //the HW init
@@ -88,8 +90,8 @@ public class AtomSQExtension extends ControllerExtension
       if (this.transportHandler.handleMidi (msg))
       return;
 
-      // if (this.modeHandler.handleMidi (msg))
-      // return;
+      if (this.modeHandler.handleMidi (msg))
+      return;
       
       // if (this.hardware.HandleEncoders (msg, menumode, false))
       // return;
