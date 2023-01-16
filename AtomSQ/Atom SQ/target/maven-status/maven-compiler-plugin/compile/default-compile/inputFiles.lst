@@ -1,6 +1,38 @@
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\LightColorOutputBinding.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\MusicalScale.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\BooleanObject.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\animation\BlinkAnimation.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\AbstractRelativeHardwareControlBinding.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\values\BooleanValueObject.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\remoteconsole\RemoteConsole.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\util\NoteInputUtils.java
 c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\AtomSQHardware.java
 c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\handler\ModeHandler.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\remoteconsole\RemoteConsoleActive.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\animation\BooleanAnimation.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\HarwareActionBinding.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\values\IncrementalValue.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\StringSupplierToPropertyBinding.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\HardwareBinding.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\LayerGroup.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\MusicalScaleLibrary.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\RelativeHardwareControlBinding.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\values\ValueObject.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\BindingWithSensitivity.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\remoteconsole\RemoteConsoleHost.java
 c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\AtomSQExtension.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\RelativeHardwareControlToRangedValueBinding.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\util\ValueUtils.java
 c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\handler\CursorHandler.java
 c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\handler\TransportHandler.java
 c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\AtomSQExtensionDefinition.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\AbsoluteHardwareControlBinding.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\DebugUtilities.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\BooleanSupplierToPropertyBinding.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\Binding.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\values\Midi.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\values\BasicStringValue.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\animation\Animation.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\Layer.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\Layers.java
+c:\Github\AtomSQ_Java\AtomSQ\Atom SQ\src\main\java\com\presonus\Bitwig Extentions\framework\InternalLightStateBinding.java

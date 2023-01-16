@@ -1,3 +1,15 @@
-com\presonus\handler\CursorHandler.class
-com\presonus\handler\TransportHandler.class
+com\bitwig\extensions\framework\Layers.class
+com\bitwig\extensions\framework\LayerGroup.class
+com\bitwig\extensions\framework\values\Midi.class
+com\bitwig\extensions\framework\AbstractRelativeHardwareControlBinding.class
+com\bitwig\extensions\util\ValueUtils.class
+com\bitwig\extensions\framework\AbsoluteHardwareControlBinding.class
+com\bitwig\extensions\framework\RelativeHardwareControlBinding.class
+com\bitwig\extensions\framework\Binding.class
+com\bitwig\extensions\framework\RelativeHardwareControlToRangedValueBinding.class
 com\presonus\AtomSQExtensionDefinition.class
+com\bitwig\extensions\remoteconsole\RemoteConsole.class
+com\bitwig\extensions\framework\StringSupplierToPropertyBinding.class
+com\bitwig\extensions\framework\BindingWithSensitivity.class
+com\bitwig\extensions\framework\Layer.class
+com\bitwig\extensions\framework\HardwareBinding.class
