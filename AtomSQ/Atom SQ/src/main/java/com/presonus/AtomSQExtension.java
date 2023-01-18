@@ -110,7 +110,7 @@ public class AtomSQExtension extends ControllerExtension
    private final static int[]  ENCODERS = {14,15,16,17,18,19,29,21};
    private final static int[] BUTTONARRAY = {36, 37, 38, 39, 40, 41};
 
-//ATOM colors
+   //ATOM colors
    private static final Color WHITE = Color.fromRGB(1, 1, 1);
    private static final Color BLACK = Color.fromRGB(0, 0, 0);
    private static final Color RED = Color.fromRGB(1, 0, 0);
@@ -224,6 +224,10 @@ public class AtomSQExtension extends ControllerExtension
       host.showPopupNotification("Atom SQ Initialized");
    }
 
+   ////////////////////////
+   //  Hardware Surface  //
+   ////////////////////////
+
    private void createHardwareSurface()
    {
       //called in Init
@@ -335,125 +339,6 @@ public class AtomSQExtension extends ControllerExtension
 
    }
 
-
-   @Override
-   public void exit()
-   {
-      // TODO: Perform any cleanup once the driver exits
-      // For now just show a popup notification for verification that it is no longer running.
-            //Exit Live Mode
-            mMidiOut.sendMidi(143,00,00);
-      getHost().showPopupNotification("Atom SQ Exited");
-   }
-
-   @Override
-   public void flush()
-   {
-      //this.transportHandler.updateLED ();
-   }
-
-
-   private void onMidi0(final ShortMidiMessage msg)
-{
-   // getHost().println(msg.toString());
-}
-
-private void initLayers()
-   {
-      //called in Init
-      mBaseLayer = createLayer("Base");
-      mInstLayer = createLayer("Instrument");
-      mSongLayer = createLayer("Song");
-
-      initBaseLayer();
-      initInstLayer();
-      initSongLayer();
-
-      // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
-   }
-
-   private Layer createLayer(final String name)
-   {
-      return new Layer(mLayers, name);
-   }
-
-   private void initBaseLayer()
-   {
-      mBaseLayer.bindIsPressed(mShiftButton, this::setIsShiftPressed);
-      mBaseLayer.bindToggle(mClickCountInButton, mTransport.isMetronomeEnabled());
-
-      mBaseLayer.bindToggle(mPlayLoopButton, () -> {
-         if (mShift)
-            mTransport.isArrangerLoopEnabled().toggle();
-         else
-            mTransport.play();
-      }, mTransport.isPlaying());
-
-      mBaseLayer.bindToggle(mStopUndoButton, () -> {
-         if (mShift)
-            mApplication.undo();
-         else
-            mTransport.stop();
-      }, () -> !mTransport.isPlaying().get());
-
-      mBaseLayer.bindToggle(mRecordSaveButton, () -> {
-         if (mShift)
-            save();
-         else
-            mTransport.isArrangerRecordEnabled().toggle();
-      }, mTransport.isArrangerRecordEnabled());
-
-      mBaseLayer.bindToggle(mUpButton, mCursorTrack.selectPreviousAction(), mCursorTrack.hasPrevious());
-      mBaseLayer.bindToggle(mDownButton, mCursorTrack.selectNextAction(), mCursorTrack.hasNext());
-      mBaseLayer.bindToggle(mLeftButton, mCursorDevice.selectPreviousAction(), mCursorDevice.hasPrevious());
-      mBaseLayer.bindToggle(mRightButton, mCursorDevice.selectNextAction(), mCursorDevice.hasNext());
-      //add toggles for the "layers"
-  
-      mBaseLayer.bindToggle(mInstButton, mInstLayer);
-      //(mInstButton, () -> { mInstLayer.activate();}, () ->!mInstLayer.isActive().get());
-     // mSongLayer.bindPressed(mSongButton, () ->{SongMode();
-     //                                           getHost().println("Booyah");});
-      //(mSongButton,() -> { mSongLayer.activate();}, () ->!mSongLayer.isActive().get());
-
-      // mBaseLayer.bindToggle(mEditorButton, mStepsLayer);
-
-      for (int i = 0; i < 8; i++)
-      {
-         final Parameter parameter = mRemoteControls.getParameter(i);
-         final RelativeHardwareKnob encoder = mEncoders[i];
-
-         mBaseLayer.bind(encoder, parameter);
-      }
-
-      mBaseLayer.activate();
-   }
-
-   private void InstMode ()
-   {
-      getHost().println("InstMode");
-   }
-   private void SongMode ()
-   {
-      getHost().println("SongMode");
-   }
-
-   private void initInstLayer()
-   {
-      //initialize the bindings for this layer
-      getHost().println("Booyah");
-
-      
- 
-   }
-   private void initSongLayer()
-   {
-      getHost().println("Booyah Song");
-      //bind Encoders to cursor Track Pan, Vol and FX
-     mSongLayer.bind(mEncoders[4], mCursorTrack.pan());
-     mSongLayer.bindToggle(m1Button, mCursorTrack.mute());
-
-  
-   }
    private HardwareButton createToggleButton(
       final String id,
       final int controlNumber,
@@ -523,7 +408,142 @@ private void initLayers()
       }
    }
 
+   ////////////////////////
+   //       Layers       //
+   ////////////////////////
 
+   private void initLayers()
+   {
+      //called in Init
+      mBaseLayer = createLayer("Base");
+      mInstLayer = createLayer("Instrument");
+      mSongLayer = createLayer("Song");
+
+      initBaseLayer();
+      initInstLayer();
+      initSongLayer();
+
+      // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
+   }
+
+   private Layer createLayer(final String name)
+   {
+      return new Layer(mLayers, name);
+   }
+
+   private void initBaseLayer()
+   {
+      mBaseLayer.bindIsPressed(mShiftButton, this::setIsShiftPressed);
+      mBaseLayer.bindToggle(mClickCountInButton, mTransport.isMetronomeEnabled());
+
+      mBaseLayer.bindToggle(mPlayLoopButton, () -> {
+         if (mShift)
+            mTransport.isArrangerLoopEnabled().toggle();
+         else
+            mTransport.play();
+      }, mTransport.isPlaying());
+
+      mBaseLayer.bindToggle(mStopUndoButton, () -> {
+         if (mShift)
+            mApplication.undo();
+         else
+            mTransport.stop();
+      }, () -> !mTransport.isPlaying().get());
+
+      mBaseLayer.bindToggle(mRecordSaveButton, () -> {
+         if (mShift)
+            save();
+         else
+            mTransport.isArrangerRecordEnabled().toggle();
+      }, mTransport.isArrangerRecordEnabled());
+
+      mBaseLayer.bindToggle(mUpButton, mCursorTrack.selectPreviousAction(), mCursorTrack.hasPrevious());
+      mBaseLayer.bindToggle(mDownButton, mCursorTrack.selectNextAction(), mCursorTrack.hasNext());
+      mBaseLayer.bindToggle(mLeftButton, mCursorDevice.selectPreviousAction(), mCursorDevice.hasPrevious());
+      mBaseLayer.bindToggle(mRightButton, mCursorDevice.selectNextAction(), mCursorDevice.hasNext());
+      //add toggles for the "layers"
+  
+      mBaseLayer.bindToggle(mInstButton, mInstLayer);
+      //(mInstButton, () -> { mInstLayer.activate();}, () ->!mInstLayer.isActive().get());
+     // mSongLayer.bindPressed(mSongButton, () ->{SongMode();
+     //                                           getHost().println("Booyah");});
+      //(mSongButton,() -> { mSongLayer.activate();}, () ->!mSongLayer.isActive().get());
+
+      // mBaseLayer.bindToggle(mEditorButton, mStepsLayer);
+
+      for (int i = 0; i < 8; i++)
+      {
+         final Parameter parameter = mRemoteControls.getParameter(i);
+         final RelativeHardwareKnob encoder = mEncoders[i];
+
+         mBaseLayer.bind(encoder, parameter);
+      }
+
+      mBaseLayer.activate();
+   }
+
+   private void initInstLayer()
+   {
+      //initialize the bindings for this layer
+      getHost().println("Booyah");
+
+      
+ 
+   }
+  
+   private void initSongLayer()
+   {
+      getHost().println("Booyah Song");
+      //bind Encoders to cursor Track Pan, Vol and FX
+     mSongLayer.bind(mEncoders[4], mCursorTrack.pan());
+     mSongLayer.bindToggle(m1Button, mCursorTrack.mute());
+
+  
+   }
+  
+   ////////////////////////
+   //       Modes        //
+   ////////////////////////
+  
+   private void InstMode ()
+   {
+      getHost().println("InstMode");
+   }
+  
+   private void SongMode ()
+   {
+      getHost().println("SongMode");
+   }
+
+   ////////////////////////
+   //  Standard Methods  //
+   ////////////////////////
+
+   private void onMidi0(final ShortMidiMessage msg)
+   {
+      // getHost().println(msg.toString());
+   }
+   
+   @Override
+   public void flush()
+   {
+      //this.transportHandler.updateLED ();
+   }
+
+   @Override
+   public void exit()
+{
+   // TODO: Perform any cleanup once the driver exits
+   // For now just show a popup notification for verification that it is no longer running.
+         //Exit Live Mode
+         mMidiOut.sendMidi(143,00,00);
+   getHost().showPopupNotification("Atom SQ Exited");
+}
+
+
+   ////////////////////////
+   // Host Proxy Objects //
+   ////////////////////////
   private CursorTrack mCursorTrack;
 
   //changed from pinnable cursor device
@@ -539,18 +559,9 @@ private void initLayers()
 
   private Application mApplication;
 
-  //private DrumPadBank mDrumPadBank;
-
   private boolean mShift;
 
   private NoteInput mNoteInput;
-
-//   private PlayingNote[] mPlayingNotes;
-//   private Clip mCursorClip;
-//   private int mPlayingStep;
-//   private int[] mStepData = new int[16];
-//   private int mCurrentPadForSteps;
-//   private int mCurrentPageForSteps;
 
   private HardwareSurface mHardwareSurface;
 
