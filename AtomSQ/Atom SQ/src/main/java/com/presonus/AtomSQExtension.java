@@ -46,7 +46,10 @@ import com.bitwig.extensions.framework.BooleanObject;
 import com.bitwig.extensions.framework.Layer;
 import com.bitwig.extensions.framework.Layers;
 import com.bitwig.extensions.util.NoteInputUtils;
-
+// import com.presonus.extensions.framework.BooleanObject;
+// import com.presonus.extensions.framework.Layer;
+// import com.presonus.extensions.framework.Layers;
+// import com.presonus.extensions.util.NoteInputUtils;
 
 // import com.presonus.handler.TransportHandler;
 // //import com.presonus.handler.CursorHandler;
@@ -120,7 +123,8 @@ public class AtomSQExtension extends ControllerExtension
    private static final Color BLUE = Color.fromRGB(0, 0, 1);
 
    //private final int []          ledCache             = new int [128];
-
+  //final AtomSQExtension.InstMode instMode;
+  //final AtomSQExtension.SongMode songMode;
 
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
    {
@@ -216,6 +220,9 @@ public class AtomSQExtension extends ControllerExtension
       createHardwareSurface();
 
       initLayers();
+      mBaseLayer.activate();
+      mInstLayer.activate();
+      //mSongLayer.activate();
 
       //mSongButton.pressedAction(getHost().println("Booyah"));
 
@@ -231,10 +238,10 @@ public class AtomSQExtension extends ControllerExtension
    private void createHardwareSurface()
    {
       //called in Init
+     // mHardwareSurface = getHost().createHardwareSurface(); //from APC40. maybe clearer, not sure if this would be a problem for re-classing
       final ControllerHost host = getHost();
       final HardwareSurface surface = host.createHardwareSurface();
       mHardwareSurface = surface;
-
       surface.setPhysicalSize(400, 200);
       
       mShiftButton = createToggleButton("shift", CC_SHIFT, ORANGE);
@@ -295,10 +302,15 @@ public class AtomSQExtension extends ControllerExtension
          createEncoder(i);
       }
 
-      initHardwareLayout();
+
+ 
+
+      //mSongButton.isPressed(SongMode(), !SongMode().isActive());
+      
+      setPhysicalPositions();
    }
 
-   private void initHardwareLayout()
+   private void setPhysicalPositions()
    {
       //called in CreateHardwareSurface
       final HardwareSurface surface = mHardwareSurface;
@@ -414,26 +426,46 @@ public class AtomSQExtension extends ControllerExtension
 
    private void initLayers()
    {
+      // We create all the layers here because the main layer might bind actions to activate other layers.
       //called in Init
       mBaseLayer = createLayer("Base");
       mInstLayer = createLayer("Instrument");
       mSongLayer = createLayer("Song");
 
-      initBaseLayer();
-      initInstLayer();
-      initSongLayer();
+      createBaseLayer();
+      createInstLayer();
+      createSongLayer();
 
       // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
    }
 
    private Layer createLayer(final String name)
    {
+      //helper function referenced in initLayers. Saves some typing
       return new Layer(mLayers, name);
    }
 
-   private void initBaseLayer()
+   private void createBaseLayer()
    {
+     //this works, at a toggle anyway, to activate a layer. 
+     //mBaseLayer.bindToggle(mSongButton, mSongLayer)
+
+     mBaseLayer.bindPressed(mSongButton, () -> {
+      mInstLayer.deactivate();
+      mSongLayer.activate();
+      SongMode();
+      });
+
+     mBaseLayer.bindPressed(mInstButton, () -> {
+         mSongLayer.deactivate();
+         mInstLayer.activate();
+         InstMode();
+      });
+
+
+           //Shift
       mBaseLayer.bindIsPressed(mShiftButton, this::setIsShiftPressed);
+      //Transport
       mBaseLayer.bindToggle(mClickCountInButton, mTransport.isMetronomeEnabled());
 
       mBaseLayer.bindToggle(mPlayLoopButton, () -> {
@@ -457,13 +489,19 @@ public class AtomSQExtension extends ControllerExtension
             mTransport.isArrangerRecordEnabled().toggle();
       }, mTransport.isArrangerRecordEnabled());
 
+      //Nav buttons
       mBaseLayer.bindToggle(mUpButton, mCursorTrack.selectPreviousAction(), mCursorTrack.hasPrevious());
       mBaseLayer.bindToggle(mDownButton, mCursorTrack.selectNextAction(), mCursorTrack.hasNext());
       mBaseLayer.bindToggle(mLeftButton, mCursorDevice.selectPreviousAction(), mCursorDevice.hasPrevious());
       mBaseLayer.bindToggle(mRightButton, mCursorDevice.selectNextAction(), mCursorDevice.hasNext());
-      //add toggles for the "layers"
   
-      mBaseLayer.bindToggle(mInstButton, mInstLayer);
+
+      //Menu buttons
+      // mBaseLayer.bindToggle(mInstButton, () -> mInstLayer.activate(), !mInstLayer.isActive());
+      // mBaseLayer.bindToggle(mSongButton, () -> mSongLayer.activate(), !mSongLayer.isActive());
+
+
+
       //(mInstButton, () -> { mInstLayer.activate();}, () ->!mInstLayer.isActive().get());
      // mSongLayer.bindPressed(mSongButton, () ->{SongMode();
      //                                           getHost().println("Booyah");});
@@ -471,6 +509,25 @@ public class AtomSQExtension extends ControllerExtension
 
       // mBaseLayer.bindToggle(mEditorButton, mStepsLayer);
 
+    // individually activated in the init. now
+      //mBaseLayer.activate();
+    //  mBaseLayer.bindToggle(mSongButton, () -> (getHost().println("Booyah")));
+   }
+
+   private void createInstLayer()
+   {
+      //initialize the bindings for this layer
+      getHost().println("Inst");
+      mSongLayer.deactivate();
+      //Display buttons
+      mInstLayer.bindToggle(m1Button, mCursorTrack.solo());
+      mInstLayer.bindToggle(m2Button, mCursorTrack.mute());
+      mInstLayer.bindToggle(m3Button, mCursorTrack.arm());
+      mInstLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
+      mInstLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
+      mInstLayer.bindToggle(m6Button, mCursorTrack.isActivated());
+        
+      //Encoders
       for (int i = 0; i < 8; i++)
       {
          final Parameter parameter = mRemoteControls.getParameter(i);
@@ -479,24 +536,29 @@ public class AtomSQExtension extends ControllerExtension
          mBaseLayer.bind(encoder, parameter);
       }
 
-      mBaseLayer.activate();
-   }
-
-   private void initInstLayer()
-   {
-      //initialize the bindings for this layer
-      getHost().println("Booyah");
-
-      
- 
    }
   
-   private void initSongLayer()
+   private void createSongLayer()
    {
-      getHost().println("Booyah Song");
-      //bind Encoders to cursor Track Pan, Vol and FX
-     mSongLayer.bind(mEncoders[4], mCursorTrack.pan());
-     mSongLayer.bindToggle(m1Button, mCursorTrack.mute());
+      getHost().println("Song");
+      mInstLayer.deactivate();
+      //initialize the bindings for this layer
+      //Display buttons
+      mSongLayer.bindToggle(m1Button, mCursorDevice.isEnabled());
+      mSongLayer.bindToggle(m2Button, mCursorDevice.isWindowOpen());
+      // mInstLayer.bindToggle(m3Button, mCursorTrack.arm());
+      // mInstLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
+      // mInstLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
+      // mInstLayer.bindToggle(m6Button, mCursorTrack.isActivated());
+        
+      //Encoders
+      for (int i = 0; i < 8; i++)
+      {
+         final Parameter parameter = mRemoteControls.getParameter(i);
+         final RelativeHardwareKnob encoder = mEncoders[i];
+
+         mBaseLayer.bind(encoder, parameter);
+      }
 
   
    }
@@ -508,11 +570,19 @@ public class AtomSQExtension extends ControllerExtension
    private void InstMode ()
    {
       getHost().println("InstMode");
+      getHost().showPopupNotification("Instrument Mode");
+      //activate layer, deactivate others (for encoders)
+     // mInstLayer.activate();
+      //configure display
+
+
    }
   
    private void SongMode ()
    {
       getHost().println("SongMode");
+      getHost().showPopupNotification("Song Mode");
+     // mSongLayer.activate();
    }
 
    ////////////////////////
@@ -588,6 +658,8 @@ public class AtomSQExtension extends ControllerExtension
      }
   };
 
- private Layer mBaseLayer, mInstLayer, mSongLayer;
+private Layer mBaseLayer, mInstLayer, mSongLayer;
+
+//sdfgsdfgsdfgsdfgsdfgsdfgsfdg
 
 }
