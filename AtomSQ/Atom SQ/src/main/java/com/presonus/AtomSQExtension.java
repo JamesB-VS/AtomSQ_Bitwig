@@ -231,8 +231,8 @@ public class AtomSQExtension extends ControllerExtension
       host.showPopupNotification("Atom SQ Initialized");
    }
 
-   ////////////////////////
-   //  Hardware Surface  //
+     ////////////////////////
+    //  Hardware Surface  //
    ////////////////////////
 
    private void createHardwareSurface()
@@ -296,16 +296,10 @@ public class AtomSQExtension extends ControllerExtension
       m6Button = createToggleButton("6", CC_BTN_6, ORANGE);
       m6Button.setLabel ("Btn 6");
 
-     
       for (int i = 0; i < 9; i++)
       {
          createEncoder(i);
       }
-
-
- 
-
-      //mSongButton.isPressed(SongMode(), !SongMode().isActive());
       
       setPhysicalPositions();
    }
@@ -420,8 +414,8 @@ public class AtomSQExtension extends ControllerExtension
       }
    }
 
-   ////////////////////////
-   //       Layers       //
+     ////////////////////////
+    //       Layers       //
    ////////////////////////
 
    private void initLayers()
@@ -431,10 +425,14 @@ public class AtomSQExtension extends ControllerExtension
       mBaseLayer = createLayer("Base");
       mInstLayer = createLayer("Instrument");
       mSongLayer = createLayer("Song");
+      mEditLayer = createLayer ("Edit");
+      mUserLayer = createLayer("User");
 
       createBaseLayer();
       createInstLayer();
       createSongLayer();
+      createEditLayer();
+      createUserLayer();
 
       // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
    }
@@ -452,16 +450,36 @@ public class AtomSQExtension extends ControllerExtension
 
      mBaseLayer.bindPressed(mSongButton, () -> {
       mInstLayer.deactivate();
+      mUserLayer.deactivate();
+      mEditLayer.deactivate();
       mSongLayer.activate();
       SongMode();
       });
 
      mBaseLayer.bindPressed(mInstButton, () -> {
-         mSongLayer.deactivate();
-         mInstLayer.activate();
-         InstMode();
+      mUserLayer.deactivate();
+      mEditLayer.deactivate();
+      mSongLayer.deactivate();
+      mInstLayer.activate();
+      InstMode();
       });
 
+      mBaseLayer.bindPressed(mEditorButton, () -> {
+         mInstLayer.deactivate();
+         mUserLayer.deactivate();
+         mSongLayer.deactivate();
+         mEditLayer.activate();
+         EditMode();
+         });
+
+      mBaseLayer.bindPressed(mUserButton, () -> {
+         mInstLayer.deactivate();
+         mEditLayer.deactivate();
+         mSongLayer.deactivate();
+         mUserLayer.activate();
+         UserMode();
+         });
+      
 
            //Shift
       mBaseLayer.bindIsPressed(mShiftButton, this::setIsShiftPressed);
@@ -495,27 +513,11 @@ public class AtomSQExtension extends ControllerExtension
       mBaseLayer.bindToggle(mLeftButton, mCursorDevice.selectPreviousAction(), mCursorDevice.hasPrevious());
       mBaseLayer.bindToggle(mRightButton, mCursorDevice.selectNextAction(), mCursorDevice.hasNext());
   
-
-      //Menu buttons
-      // mBaseLayer.bindToggle(mInstButton, () -> mInstLayer.activate(), !mInstLayer.isActive());
-      // mBaseLayer.bindToggle(mSongButton, () -> mSongLayer.activate(), !mSongLayer.isActive());
-
-
-
-      //(mInstButton, () -> { mInstLayer.activate();}, () ->!mInstLayer.isActive().get());
-     // mSongLayer.bindPressed(mSongButton, () ->{SongMode();
-     //                                           getHost().println("Booyah");});
-      //(mSongButton,() -> { mSongLayer.activate();}, () ->!mSongLayer.isActive().get());
-
-      // mBaseLayer.bindToggle(mEditorButton, mStepsLayer);
-
-    // individually activated in the init. now
-      //mBaseLayer.activate();
-    //  mBaseLayer.bindToggle(mSongButton, () -> (getHost().println("Booyah")));
    }
 
    private void createInstLayer()
    {
+      getHost().println("InstLayer active");
       //initialize the bindings for this layer
       getHost().println("Inst");
       mSongLayer.deactivate();
@@ -540,16 +542,73 @@ public class AtomSQExtension extends ControllerExtension
   
    private void createSongLayer()
    {
+      //notifications
+      getHost().println("SongLayer active");
       getHost().println("Song");
-      mInstLayer.deactivate();
+      //deactivate other Mode layers
+
       //initialize the bindings for this layer
       //Display buttons
-      mSongLayer.bindToggle(m1Button, mCursorDevice.isEnabled());
+      mSongLayer.bindToggle (m1Button, mCursorDevice.isEnabled());
       mSongLayer.bindToggle(m2Button, mCursorDevice.isWindowOpen());
-      // mInstLayer.bindToggle(m3Button, mCursorTrack.arm());
-      // mInstLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
-      // mInstLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
-      // mInstLayer.bindToggle(m6Button, mCursorTrack.isActivated());
+      // mSongLayer.bindToggle(m3Button, mCursorTrack.arm());
+      // mSongLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
+      // mSongLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
+      // mSongLayer.bindToggle(m6Button, mCursorTrack.isActivated());
+        
+      //Encoders
+      for (int i = 0; i < 8; i++)
+      {
+         final Parameter parameter = mRemoteControls.getParameter(i);
+         final RelativeHardwareKnob encoder = mEncoders[i];
+
+         mBaseLayer.bind(encoder, parameter);
+      }
+   }
+
+   private void createEditLayer()
+   {
+      //notifications
+      getHost().println("EditLayer active");
+      getHost().println("Eong");
+      //deactivate other Mode layers
+
+      //initialize the bindings for this layer
+      //Display buttons
+      //mSongLayer.bindToggle (m1Button, mCursorDevice.isEnabled());
+      //mSongLayer.bindToggle(m2Button, mCursorDevice.isWindowOpen());
+      // mSongLayer.bindToggle(m3Button, mCursorTrack.arm());
+      // mSongLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
+      // mSongLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
+      // mSongLayer.bindToggle(m6Button, mCursorTrack.isActivated());
+        
+      //Encoders
+      for (int i = 0; i < 8; i++)
+      {
+         final Parameter parameter = mRemoteControls.getParameter(i);
+         final RelativeHardwareKnob encoder = mEncoders[i];
+
+         mBaseLayer.bind(encoder, parameter);
+      }
+
+  
+   }
+
+   private void createUserLayer()
+   {
+      //notifications
+      getHost().println("UserLayer active");
+      getHost().println("User");
+      //deactivate other Mode layers
+
+      //initialize the bindings for this layer
+      //Display buttons
+      //mSongLayer.bindToggle (m1Button, mCursorDevice.isEnabled());
+      //mSongLayer.bindToggle(m2Button, mCursorDevice.isWindowOpen());
+      // mSongLayer.bindToggle(m3Button, mCursorTrack.arm());
+      // mSongLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
+      // mSongLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
+      // mSongLayer.bindToggle(m6Button, mCursorTrack.isActivated());
         
       //Encoders
       for (int i = 0; i < 8; i++)
@@ -563,8 +622,8 @@ public class AtomSQExtension extends ControllerExtension
   
    }
   
-   ////////////////////////
-   //       Modes        //
+     ////////////////////////
+    //       Modes        //
    ////////////////////////
   
    private void InstMode ()
@@ -585,8 +644,22 @@ public class AtomSQExtension extends ControllerExtension
      // mSongLayer.activate();
    }
 
-   ////////////////////////
-   //  Standard Methods  //
+   private void UserMode ()
+   {
+      getHost().println("UserMode");
+      getHost().showPopupNotification("User Mode");
+     // mSongLayer.activate();
+   }
+
+   private void EditMode ()
+   {
+      getHost().println("EditMode");
+      getHost().showPopupNotification("Edit Mode");
+     // mSongLayer.activate();
+   }
+
+     ////////////////////////
+    //  Standard Methods  //
    ////////////////////////
 
    private void onMidi0(final ShortMidiMessage msg)
@@ -611,8 +684,8 @@ public class AtomSQExtension extends ControllerExtension
 }
 
 
-   ////////////////////////
-   // Host Proxy Objects //
+     ////////////////////////
+    // Host Proxy Objects //
    ////////////////////////
   private CursorTrack mCursorTrack;
 
@@ -658,7 +731,7 @@ public class AtomSQExtension extends ControllerExtension
      }
   };
 
-private Layer mBaseLayer, mInstLayer, mSongLayer;
+private Layer mBaseLayer, mInstLayer, mSongLayer, mEditLayer, mUserLayer;
 
 //sdfgsdfgsdfgsdfgsdfgsdfgsfdg
 
