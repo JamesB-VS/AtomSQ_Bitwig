@@ -36,6 +36,7 @@ com\bitwig\extensions\framework\AbsoluteHardwareControlBinding.class
 com\bitwig\extensions\framework\HardwareBinding.class
 com\bitwig\extensions\framework\HarwareActionBinding.class
 com\bitwig\extensions\framework\values\IncrementalValue.class
+com\presonus\handler\SysexHandler.class
 com\bitwig\extensions\util\NoteInputUtils.class
 com\bitwig\extensions\framework\LightColorOutputBinding.class
 com\bitwig\extensions\remoteconsole\RemoteConsoleActive.class

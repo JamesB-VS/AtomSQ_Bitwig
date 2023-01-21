@@ -22,6 +22,12 @@
 			<artifactId>extension-api</artifactId>
 			<version>17</version>
 		</dependency>
+		<dependency>
+		<!-- added this to allow for the Hex convert from Apache. Could use some research as to what the commons codec is -->
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.10</version>
+		</dependency>
 	</dependencies>
 
 	<build>

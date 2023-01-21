@@ -41,19 +41,14 @@ import com.bitwig.extension.controller.api.RelativeHardwareKnob;
 import com.bitwig.extension.controller.api.Scene;
 import com.bitwig.extension.controller.api.SceneBank;
 import com.bitwig.extension.controller.api.Transport;
+import com.bitwig.extension.api.util.midi.SysexBuilder;
 //these are not in the regular APIs...they come from the Bitwig repo though. 
 import com.bitwig.extensions.framework.BooleanObject;
 import com.bitwig.extensions.framework.Layer;
 import com.bitwig.extensions.framework.Layers;
 import com.bitwig.extensions.util.NoteInputUtils;
-// import com.presonus.extensions.framework.BooleanObject;
-// import com.presonus.extensions.framework.Layer;
-// import com.presonus.extensions.framework.Layers;
-// import com.presonus.extensions.util.NoteInputUtils;
 
-// import com.presonus.handler.TransportHandler;
-// //import com.presonus.handler.CursorHandler;
-// import com.presonus.handler.ModeHandler;
+import com.presonus.handler.SysexHandler;
 
 
 public class AtomSQExtension extends ControllerExtension
@@ -125,6 +120,10 @@ public class AtomSQExtension extends ControllerExtension
    //private final int []          ledCache             = new int [128];
   //final AtomSQExtension.InstMode instMode;
   //final AtomSQExtension.SongMode songMode;
+ // final Hexify hexify = new Hexify();
+
+ //final SysexHandler sysexHandler = new SysexHandler();
+ final SysexHandler sH = new SysexHandler();
 
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
    {
@@ -165,6 +164,10 @@ public class AtomSQExtension extends ControllerExtension
       mCursorTrack.pan().markInterested();
       mCursorTrack.isActivated ().markInterested();
       mCursorTrack.color ().markInterested();
+
+      //atm these do not do anything, but they may help with getting the lights to work on the arrow keys.
+      mCursorTrack.hasPrevious().markInterested();
+      mCursorTrack.hasNext().markInterested();
 
       //Transport
       mTransport = host.createTransport();
@@ -219,13 +222,19 @@ public class AtomSQExtension extends ControllerExtension
       //Methods
       createHardwareSurface();
 
+      //Layers
       initLayers();
       mBaseLayer.activate();
       mInstLayer.activate();
-      //mSongLayer.activate();
+      //this and initializing the InstMode below mimic what happens when the Inst button ispressed.
 
-      //mSongButton.pressedAction(getHost().println("Booyah"));
-
+      //Modes
+      InstMode();
+    
+      
+     //final SysexHandler sysexHandler = new SysexHandler();
+      //uncomment for testing of the HEX conversion
+      // host.println(sysexHandler.Hexify("hello world"));
 
       //Notifications      
       host.showPopupNotification("Atom SQ Initialized");
@@ -434,6 +443,9 @@ public class AtomSQExtension extends ControllerExtension
       createEditLayer();
       createUserLayer();
 
+      //could add the mark-intereted here, but they do nto work on this type for some reason
+      //mSongLayer.isActive().markInterested();
+
       // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
    }
 
@@ -445,24 +457,27 @@ public class AtomSQExtension extends ControllerExtension
 
    private void createBaseLayer()
    {
-     //this works, at a toggle anyway, to activate a layer. 
-     //mBaseLayer.bindToggle(mSongButton, mSongLayer)
+     
+      mBaseLayer.bindPressed(mSongButton, () -> {
+         //boolean isLightOnOffSupplier = mSongLayer.isActivated();
+         mInstLayer.deactivate();
+         mUserLayer.deactivate();
+         mEditLayer.deactivate();
+         mSongLayer.activate();
+         SongMode(); 
+         });
+      //cannot add a light action to ta bindPressed. would be ", mSongLayer.isActive().get()" at the end. Need to figure somethinge else out. 
+      // mTransport.isPlaying() works here, if the songlayer has been pressed. odd.
 
-     mBaseLayer.bindPressed(mSongButton, () -> {
-      mInstLayer.deactivate();
-      mUserLayer.deactivate();
-      mEditLayer.deactivate();
-      mSongLayer.activate();
-      SongMode();
-      });
-
-     mBaseLayer.bindPressed(mInstButton, () -> {
-      mUserLayer.deactivate();
-      mEditLayer.deactivate();
-      mSongLayer.deactivate();
-      mInstLayer.activate();
-      InstMode();
-      });
+      mBaseLayer.bindPressed(mInstButton, () -> {
+         mUserLayer.deactivate();
+         mEditLayer.deactivate();
+         mSongLayer.deactivate();
+         mInstLayer.activate();
+         InstMode();
+         //works, tested.
+         //getHost().println(sysexHandler.Hexify("hello world"));
+         });
 
       mBaseLayer.bindPressed(mEditorButton, () -> {
          mInstLayer.deactivate();
@@ -480,9 +495,9 @@ public class AtomSQExtension extends ControllerExtension
          UserMode();
          });
       
-
-           //Shift
+      //Shift
       mBaseLayer.bindIsPressed(mShiftButton, this::setIsShiftPressed);
+
       //Transport
       mBaseLayer.bindToggle(mClickCountInButton, mTransport.isMetronomeEnabled());
 
@@ -520,9 +535,8 @@ public class AtomSQExtension extends ControllerExtension
       getHost().println("InstLayer active");
       //initialize the bindings for this layer
       getHost().println("Inst");
-      mSongLayer.deactivate();
-      //Display buttons
-      mInstLayer.bindToggle(m1Button, mCursorTrack.solo());
+
+      mInstLayer.bindToggle(m1Button, mCursorTrack.solo() );
       mInstLayer.bindToggle(m2Button, mCursorTrack.mute());
       mInstLayer.bindToggle(m3Button, mCursorTrack.arm());
       mInstLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
@@ -535,7 +549,7 @@ public class AtomSQExtension extends ControllerExtension
          final Parameter parameter = mRemoteControls.getParameter(i);
          final RelativeHardwareKnob encoder = mEncoders[i];
 
-         mBaseLayer.bind(encoder, parameter);
+         mInstLayer.bind(encoder, parameter);
       }
 
    }
@@ -557,20 +571,16 @@ public class AtomSQExtension extends ControllerExtension
       // mSongLayer.bindToggle(m6Button, mCursorTrack.isActivated());
         
       //Encoders
-      for (int i = 0; i < 8; i++)
-      {
-         final Parameter parameter = mRemoteControls.getParameter(i);
-         final RelativeHardwareKnob encoder = mEncoders[i];
+      mSongLayer.bind (mEncoders[4], mCursorTrack.pan());
+      mSongLayer.bind (mEncoders[5], mCursorTrack.volume());
 
-         mBaseLayer.bind(encoder, parameter);
-      }
    }
 
    private void createEditLayer()
    {
       //notifications
       getHost().println("EditLayer active");
-      getHost().println("Eong");
+      getHost().println("Edit");
       //deactivate other Mode layers
 
       //initialize the bindings for this layer
@@ -582,14 +592,14 @@ public class AtomSQExtension extends ControllerExtension
       // mSongLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
       // mSongLayer.bindToggle(m6Button, mCursorTrack.isActivated());
         
-      //Encoders
-      for (int i = 0; i < 8; i++)
-      {
-         final Parameter parameter = mRemoteControls.getParameter(i);
-         final RelativeHardwareKnob encoder = mEncoders[i];
+      // //Encoders
+      // for (int i = 0; i < 8; i++)
+      // {
+      //    final Parameter parameter = mRemoteControls.getParameter(i);
+      //    final RelativeHardwareKnob encoder = mEncoders[i];
 
-         mBaseLayer.bind(encoder, parameter);
-      }
+      //    mBaseLayer.bind(encoder, parameter);
+      // }
 
   
    }
@@ -609,15 +619,7 @@ public class AtomSQExtension extends ControllerExtension
       // mSongLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
       // mSongLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
       // mSongLayer.bindToggle(m6Button, mCursorTrack.isActivated());
-        
-      //Encoders
-      for (int i = 0; i < 8; i++)
-      {
-         final Parameter parameter = mRemoteControls.getParameter(i);
-         final RelativeHardwareKnob encoder = mEncoders[i];
 
-         mBaseLayer.bind(encoder, parameter);
-      }
 
   
    }
@@ -630,25 +632,87 @@ public class AtomSQExtension extends ControllerExtension
    {
       getHost().println("InstMode");
       getHost().showPopupNotification("Instrument Mode");
+      mApplication.setPanelLayout("ARRANGE");
       //activate layer, deactivate others (for encoders)
      // mInstLayer.activate();
       //configure display
+      mMidiOut.sendSysex("F0000106221300F7");
+      mMidiOut.sendSysex("F0000106221400F7");
+      //Display
 
 
+      //B1 L1 Solo
+      mMidiOut.sendSysex("F0 00 01 06 22 12 00 00 5B 5B 00 53 6F 6C 6F F7");
+      //B2 L1 Mute
+      mMidiOut.sendSysex("F0 00 01 06 22 12 01 00 5B 5B 00 4D 75 74 65 F7");
+      //B3 L1 Arm
+      mMidiOut.sendSysex("F0 00 01 06 22 12 02 00 5B 5B 00 41 72 6D F7");
+      //B1 L2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 03 00 5B 5B 00 F7");
+      //B2 L2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 04 00 5B 5B 00 F7");
+      //B3 L2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 05 00 5B 5B 00 F7");
+      //B4 L1 Device
+      mMidiOut.sendSysex("F0 00 01 06 22 12 09 00 5B 5B 00 44 65 76 F7");
+      //B5 L1 Device      F0 00 01 06 22 12 0E 00 5B 5B 00
+      mMidiOut.sendSysex("F0 00 01 06 22 12 08 00 5B 5B 00 44 65 76 F7");
+      //B6 L1 Track
+      mMidiOut.sendSysex("F0 00 01 06 22 12 0A 00 5B 5B 00 54 72 61 63 6B F7");
+      //B4 L2 Enable
+      mMidiOut.sendSysex("F0 00 01 06 22 12 0B 00 5B 5B 00 45 6E 61 62 6c 65 64 F7");
+      //B5 L2 Wndw
+      mMidiOut.sendSysex("F0 00 01 06 22 12 0C 00 5B 5B 00 57 6E 64 77 F7");
+      //B6 L2 active
+      mMidiOut.sendSysex("F0 00 01 06 22 12 0D 00 5B 5B 00 61 63 74 69 76 65 F7");
+      //line 1 Arranger
+      mMidiOut.sendSysex("F0 00 01 06 22 12 06 00 5B 5B 00 41 72 72 61 6e 67 65 72 F7");
+      //line 2  Track:
+      mMidiOut.sendSysex("F0 00 01 06 22 12 07 00 5B 5B 00 54 72 61 63 6B 3A F7");
+      // Encoder 9...must recenter it? 00 and 127 have no other visible effect.
+      mMidiOut.sendMidi(176, 29, 00);
+      mMidiOut.sendSysex("F0000106221301F7");
    }
   
    private void SongMode ()
    {
       getHost().println("SongMode");
       getHost().showPopupNotification("Song Mode");
-     // mSongLayer.activate();
-   }
+     
+      mApplication.setPanelLayout("MIX");
 
-   private void UserMode ()
-   {
-      getHost().println("UserMode");
-      getHost().showPopupNotification("User Mode");
-     // mSongLayer.activate();
+     mMidiOut.sendSysex("F0000106221300F7");
+     mMidiOut.sendSysex("F0000106221400F7");
+      //Display clear
+      //B1 L1
+      mMidiOut.sendSysex("F0 00 01 06 22 12 00 00 5B 5B 00 53 6F 6C 6F F7");
+      //B2 L1
+      mMidiOut.sendSysex("F0 00 01 06 22 12 01 00 5B 5B 00 4D 75 74 65 F7");
+      //B3 L1
+      mMidiOut.sendSysex("F0 00 01 06 22 12 02 00 5B 5B 00 41 72 6D F7");
+      //B1 L2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 03 00 5B 5B 00 F7");
+      //B2 L2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 04 00 5B 5B 00 F7");
+      //B3 L2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 05 00 5B 5B 00 F7");
+      //B4 L2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 0B 00 5B 5B 00 45 6E 61 62 6c 65 64 F7");
+      //B5 L2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 0C 00 5B 5B 00 57 6E 64 77 F7");
+      //B6 L2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 0D 00 5B 5B 00 61 63 74 69 76 65 F7");
+      //B4 L1
+      mMidiOut.sendSysex("F0 00 01 06 22 12 08 00 5B 5B 00 44 65 76 F7");
+      //B5 L1
+      mMidiOut.sendSysex("F0 00 01 06 22 12 09 00 5B 5B 00 44 65 76 F7");
+      //B6 L1
+      mMidiOut.sendSysex("F0 00 01 06 22 12 0A 00 5B 5B 00 54 72 61 63 6B F7");
+      //line 1
+      mMidiOut.sendSysex("F0 00 01 06 22 12 06 00 5B 5B 00 4d 69 78 65 72 F7");
+      //line 2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 07 00 5B 5B 00 54 72 61 63 6B 3A F7");
+     mMidiOut.sendSysex("F0000106221301F7");
    }
 
    private void EditMode ()
@@ -656,6 +720,55 @@ public class AtomSQExtension extends ControllerExtension
       getHost().println("EditMode");
       getHost().showPopupNotification("Edit Mode");
      // mSongLayer.activate();
+     mMidiOut.sendSysex("F0000106221300F7");
+     mMidiOut.sendSysex("F0000106221400F7");
+
+//Display clear
+      //B1 L1   
+      final SysexBuilder sB = new SysexBuilder();
+      
+      String msg = sH.Hexify("Nice!");
+      byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.B1L1).addHex(sH.ltblue).addByte(sH.spc).addHex(msg).terminate();
+      mMidiOut.sendSysex(sysex);
+
+      //B2 L1             F0 00 01 06 22 12 00 7F 7F 00 00 F7
+      mMidiOut.sendSysex("F0 00 01 06 22 12 01 00 5B 5B 00 F7");
+      //B3 L1
+      mMidiOut.sendSysex("F0 00 01 06 22 12 02 00 5B 5B 00 F7");
+      //B1 L2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 03 00 5B 5B 00 F7");
+      //B2 L2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 04 00 5B 5B 00 F7");
+      //B3 L2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 05 00 5B 5B 00 F7");
+      //B4 L2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 0B 00 5B 5B 00 F7");
+      //B5 L2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 0C 00 5B 5B 00 F7");
+      //B6 L2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 0D 00 5B 5B 00 F7");
+      //B4 L1
+      mMidiOut.sendSysex("F0 00 01 06 22 12 08 00 5B 5B 00 F7");
+      //B5 L1
+      mMidiOut.sendSysex("F0 00 01 06 22 12 09 00 5B 5B 00 F7");
+      //B6 L1
+      mMidiOut.sendSysex("F0 00 01 06 22 12 0A 00 5B 5B 00 F7");
+      //line 1
+      mMidiOut.sendSysex("F0 00 01 06 22 12 06 00 5B 5B 00 F7");
+      //line 2
+      mMidiOut.sendSysex("F0 00 01 06 22 12 07 00 5B 5B 00 F7");
+
+     mMidiOut.sendSysex("F0000106221301F7");
+
+   }
+
+   private void UserMode ()
+   {
+      getHost().println("UserMode");
+      getHost().showPopupNotification("User Mode");
+     // mSongLayer.activate();
+     mMidiOut.sendSysex("F0000106221401F7");
+     mMidiOut.sendSysex("F0000106221301F7");
    }
 
      ////////////////////////
@@ -671,6 +784,8 @@ public class AtomSQExtension extends ControllerExtension
    public void flush()
    {
       //this.transportHandler.updateLED ();
+      //this turns on the lights (apparently) by sending the 127 to the relevant CC mapped to the button in the Hardware..whatever, it works. :)
+      mHardwareSurface.updateHardware();
    }
 
    @Override
