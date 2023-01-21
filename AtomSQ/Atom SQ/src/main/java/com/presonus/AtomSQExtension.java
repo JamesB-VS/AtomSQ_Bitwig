@@ -124,6 +124,9 @@ public class AtomSQExtension extends ControllerExtension
 
  //final SysexHandler sysexHandler = new SysexHandler();
  final SysexHandler sH = new SysexHandler();
+ public static final SysexBuilder sB = new SysexBuilder();
+
+ 
 
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
    {
@@ -134,7 +137,10 @@ public class AtomSQExtension extends ControllerExtension
    public void init()
    {
       final ControllerHost host = getHost();
+      //added final here in testing for method in sysexhandler...might break something.
       mApplication = host.createApplication();
+      mApplication.panelLayout().markInterested();
+    
 
       final MidiIn midiIn = host.getMidiInPort(0);
       midiIn.setMidiCallback((ShortMidiMessageReceivedCallback)msg -> onMidi0(msg));
@@ -145,18 +151,7 @@ public class AtomSQExtension extends ControllerExtension
 
       //Cursor Track / Device stuff
       mCursorTrack = host.createCursorTrack(2, 0);
-      mCursorTrack.arm().markInterested();
-      mCursorDevice = mCursorTrack.createCursorDevice("Current", "Current", 8,  CursorDeviceFollowMode.FOLLOW_SELECTION);
-      mRemoteControls = mCursorDevice.createCursorRemoteControlsPage("CursorPage1", 8, "");
-
-      //Cursor HW Layout creation
-      mRemoteControls.setHardwareLayout(HardwareControlType.ENCODER, 8);
-      //Encoder indication
-      for (int i = 0; i < 8; ++i)
-         mRemoteControls.getParameter(i).setIndication(true);
-
-      mCursorDevice.isEnabled ().markInterested ();
-      mCursorDevice.isWindowOpen ().markInterested ();
+     
       mCursorTrack.solo().markInterested();
       mCursorTrack.mute().markInterested();
       mCursorTrack.arm().markInterested();
@@ -164,6 +159,25 @@ public class AtomSQExtension extends ControllerExtension
       mCursorTrack.pan().markInterested();
       mCursorTrack.isActivated ().markInterested();
       mCursorTrack.color ().markInterested();
+      mCursorTrack.name().markInterested();
+
+      //Cursor HW Layout creation
+ 
+
+      mCursorDevice = mCursorTrack.createCursorDevice("Current", "Current", 8,  CursorDeviceFollowMode.FOLLOW_SELECTION);
+
+      mCursorDevice.isEnabled ().markInterested ();
+      mCursorDevice.isWindowOpen ().markInterested ();
+      mCursorDevice.name().markInterested();
+     
+      //create RCs for encoders
+     
+      mRemoteControls = mCursorDevice.createCursorRemoteControlsPage("CursorPage1", 8, "");
+      mRemoteControls.setHardwareLayout(HardwareControlType.ENCODER, 8);
+      //Encoder indication
+      for (int i = 0; i < 8; ++i)
+      mRemoteControls.getParameter(i).setIndication(true);
+    
 
       //atm these do not do anything, but they may help with getting the lights to work on the arrow keys.
       mCursorTrack.hasPrevious().markInterested();
@@ -638,37 +652,35 @@ public class AtomSQExtension extends ControllerExtension
       //configure display
       mMidiOut.sendSysex("F0000106221300F7");
       mMidiOut.sendSysex("F0000106221400F7");
-      //Display
+     
+      //button titles
+      String[] mTitles= {"Mute", "Solo", "Arm", "Enabled", "Wndw", "active"};
+
+      for (int i = 0; i < 6; i++) 
+      {
+         final String msg = mTitles[i];
+         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.ltblue).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         mMidiOut.sendSysex(sysex);
+      }
+     
+      // //Main line 1 
+      // String pLayout = mApplication.panelLayout().get();
+      // byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.ltblue).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
+      //    mMidiOut.sendSysex(sysex2);
+
+      // //Main line 2
+      // String pTrack = mCursorTrack.name().get();
+      // byte[] sysex3 = sB.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.ltblue).addByte(sH.spc).addString(pTrack, pTrack.length()).terminate();
+      //    mMidiOut.sendSysex(sysex3);
 
 
-      //B1 L1 Solo
-      mMidiOut.sendSysex("F0 00 01 06 22 12 00 00 5B 5B 00 53 6F 6C 6F F7");
-      //B2 L1 Mute
-      mMidiOut.sendSysex("F0 00 01 06 22 12 01 00 5B 5B 00 4D 75 74 65 F7");
-      //B3 L1 Arm
-      mMidiOut.sendSysex("F0 00 01 06 22 12 02 00 5B 5B 00 41 72 6D F7");
-      //B1 L2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 03 00 5B 5B 00 F7");
-      //B2 L2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 04 00 5B 5B 00 F7");
-      //B3 L2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 05 00 5B 5B 00 F7");
-      //B4 L1 Device
-      mMidiOut.sendSysex("F0 00 01 06 22 12 09 00 5B 5B 00 44 65 76 F7");
-      //B5 L1 Device      F0 00 01 06 22 12 0E 00 5B 5B 00
-      mMidiOut.sendSysex("F0 00 01 06 22 12 08 00 5B 5B 00 44 65 76 F7");
-      //B6 L1 Track
-      mMidiOut.sendSysex("F0 00 01 06 22 12 0A 00 5B 5B 00 54 72 61 63 6B F7");
-      //B4 L2 Enable
-      mMidiOut.sendSysex("F0 00 01 06 22 12 0B 00 5B 5B 00 45 6E 61 62 6c 65 64 F7");
-      //B5 L2 Wndw
-      mMidiOut.sendSysex("F0 00 01 06 22 12 0C 00 5B 5B 00 57 6E 64 77 F7");
-      //B6 L2 active
-      mMidiOut.sendSysex("F0 00 01 06 22 12 0D 00 5B 5B 00 61 63 74 69 76 65 F7");
-      //line 1 Arranger
-      mMidiOut.sendSysex("F0 00 01 06 22 12 06 00 5B 5B 00 41 72 72 61 6e 67 65 72 F7");
-      //line 2  Track:
-      mMidiOut.sendSysex("F0 00 01 06 22 12 07 00 5B 5B 00 54 72 61 63 6B 3A F7");
+      // //Main line 1 
+      // String pLayout = mApplication.panelLayout().get();
+      // byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.ltblue).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
+      //    mMidiOut.sendSysex(sysex2);
+      // //mMidiOut.sendSysex("F0 00 01 06 22 12 06 00 5B 5B 00 41 72 72 61 6e 67 65 72 F7");
+      // //line 2  Track:
+      // mMidiOut.sendSysex("F0 00 01 06 22 12 07 00 5B 5B 00 54 72 61 63 6B 3A F7");
       // Encoder 9...must recenter it? 00 and 127 have no other visible effect.
       mMidiOut.sendMidi(176, 29, 00);
       mMidiOut.sendSysex("F0000106221301F7");
@@ -683,82 +695,74 @@ public class AtomSQExtension extends ControllerExtension
 
      mMidiOut.sendSysex("F0000106221300F7");
      mMidiOut.sendSysex("F0000106221400F7");
-      //Display clear
-      //B1 L1
-      mMidiOut.sendSysex("F0 00 01 06 22 12 00 00 5B 5B 00 53 6F 6C 6F F7");
-      //B2 L1
-      mMidiOut.sendSysex("F0 00 01 06 22 12 01 00 5B 5B 00 4D 75 74 65 F7");
-      //B3 L1
-      mMidiOut.sendSysex("F0 00 01 06 22 12 02 00 5B 5B 00 41 72 6D F7");
-      //B1 L2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 03 00 5B 5B 00 F7");
-      //B2 L2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 04 00 5B 5B 00 F7");
-      //B3 L2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 05 00 5B 5B 00 F7");
-      //B4 L2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 0B 00 5B 5B 00 45 6E 61 62 6c 65 64 F7");
-      //B5 L2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 0C 00 5B 5B 00 57 6E 64 77 F7");
-      //B6 L2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 0D 00 5B 5B 00 61 63 74 69 76 65 F7");
-      //B4 L1
-      mMidiOut.sendSysex("F0 00 01 06 22 12 08 00 5B 5B 00 44 65 76 F7");
-      //B5 L1
-      mMidiOut.sendSysex("F0 00 01 06 22 12 09 00 5B 5B 00 44 65 76 F7");
-      //B6 L1
-      mMidiOut.sendSysex("F0 00 01 06 22 12 0A 00 5B 5B 00 54 72 61 63 6B F7");
-      //line 1
-      mMidiOut.sendSysex("F0 00 01 06 22 12 06 00 5B 5B 00 4d 69 78 65 72 F7");
-      //line 2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 07 00 5B 5B 00 54 72 61 63 6B 3A F7");
+     
+      //button titles
+      String[] mTitles= {"Mute", "Solo", "Arm", "Enabled", "Wndw", "active"};
+
+      for (int i = 0; i < 6; i++) 
+      {
+         final String msg = mTitles[i];
+         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.ltblue).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         mMidiOut.sendSysex(sysex);
+      }
+
+      // //Main line 1 
+      // String pLayout = mApplication.panelLayout().get();
+      // byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.ltblue).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
+      //    mMidiOut.sendSysex(sysex2);
+
+      // //Main line 2
+      // String pTrack = mCursorTrack.name().get();
+      // byte[] sysex3 = sB.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.ltblue).addByte(sH.spc).addString(pTrack, pTrack.length()).terminate();
+      //    mMidiOut.sendSysex(sysex3);
+
+
+
      mMidiOut.sendSysex("F0000106221301F7");
    }
 
    private void EditMode ()
    {
-      getHost().println("EditMode");
+      //getHost().println("EditMode");
       getHost().showPopupNotification("Edit Mode");
-     // mSongLayer.activate();
-     mMidiOut.sendSysex("F0000106221300F7");
-     mMidiOut.sendSysex("F0000106221400F7");
+      mMidiOut.sendSysex("F0000106221300F7");
+      mMidiOut.sendSysex("F0000106221400F7");
 
-//Display clear
-      //B1 L1   
-      final SysexBuilder sB = new SysexBuilder();
+      //button titles
+      String[] mTitles= {"1", "2", "3", "4", "5", "6"};
       
-      String msg = sH.Hexify("Nice!");
-      byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.B1L1).addHex(sH.ltblue).addByte(sH.spc).addHex(msg).terminate();
-      mMidiOut.sendSysex(sysex);
+      for (int i = 0; i < 6; i++) 
+      {
+        final String msg = mTitles[i];
+         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.ltblue).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         mMidiOut.sendSysex(sysex);
+      }
 
-      //B2 L1             F0 00 01 06 22 12 00 7F 7F 00 00 F7
-      mMidiOut.sendSysex("F0 00 01 06 22 12 01 00 5B 5B 00 F7");
-      //B3 L1
-      mMidiOut.sendSysex("F0 00 01 06 22 12 02 00 5B 5B 00 F7");
-      //B1 L2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 03 00 5B 5B 00 F7");
-      //B2 L2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 04 00 5B 5B 00 F7");
-      //B3 L2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 05 00 5B 5B 00 F7");
-      //B4 L2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 0B 00 5B 5B 00 F7");
-      //B5 L2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 0C 00 5B 5B 00 F7");
-      //B6 L2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 0D 00 5B 5B 00 F7");
-      //B4 L1
-      mMidiOut.sendSysex("F0 00 01 06 22 12 08 00 5B 5B 00 F7");
-      //B5 L1
-      mMidiOut.sendSysex("F0 00 01 06 22 12 09 00 5B 5B 00 F7");
-      //B6 L1
-      mMidiOut.sendSysex("F0 00 01 06 22 12 0A 00 5B 5B 00 F7");
-      //line 1
-      mMidiOut.sendSysex("F0 00 01 06 22 12 06 00 5B 5B 00 F7");
-      //line 2
-      mMidiOut.sendSysex("F0 00 01 06 22 12 07 00 5B 5B 00 F7");
+       //line 1
+       mMidiOut.sendSysex("F0 00 01 06 22 12 06 00 5B 5B 00 F7");
+
+//   //Main line 1 
+//   String pLayout = mApplication.panelLayout().get();
+//   byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.ltblue).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
+//      mMidiOut.sendSysex(sysex2);
 
      mMidiOut.sendSysex("F0000106221301F7");
+
+   }
+
+
+   public void updateDisplay ()
+   {
+
+      //Main line 1 
+      String pLayout = mApplication.panelLayout().get();
+      byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.ltblue).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
+         mMidiOut.sendSysex(sysex2);
+
+      //Main line 2
+      String pTrack = mCursorTrack.name().get();
+      byte[] sysex3 = sB.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.ltblue).addByte(sH.spc).addString("Track: ", 7).addString(pTrack, pTrack.length()).terminate();
+         mMidiOut.sendSysex(sysex3);
 
    }
 
@@ -786,6 +790,8 @@ public class AtomSQExtension extends ControllerExtension
       //this.transportHandler.updateLED ();
       //this turns on the lights (apparently) by sending the 127 to the relevant CC mapped to the button in the Hardware..whatever, it works. :)
       mHardwareSurface.updateHardware();
+
+      updateDisplay();
    }
 
    @Override
@@ -802,7 +808,7 @@ public class AtomSQExtension extends ControllerExtension
      ////////////////////////
     // Host Proxy Objects //
    ////////////////////////
-  private CursorTrack mCursorTrack;
+  public static CursorTrack mCursorTrack;
 
   //changed from pinnable cursor device
   private CursorDevice mCursorDevice;
@@ -814,8 +820,8 @@ public class AtomSQExtension extends ControllerExtension
   private MidiIn mMidiIn;
 
   private MidiOut mMidiOut;
-
-  private Application mApplication;
+//making public to usein SysexHandler. Static too
+private Application mApplication;
 
   private boolean mShift;
 
