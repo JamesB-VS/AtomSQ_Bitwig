@@ -233,7 +233,7 @@ public class AtomSQExtension extends ControllerExtension
       mMidiOut.sendSysex("F0000106221301F7");
          
 
-      //Methods
+      //API Hardware surface
       createHardwareSurface();
 
       //Layers
@@ -246,9 +246,7 @@ public class AtomSQExtension extends ControllerExtension
       InstMode();
     
       
-     //final SysexHandler sysexHandler = new SysexHandler();
-      //uncomment for testing of the HEX conversion
-      // host.println(sysexHandler.Hexify("hello world"));
+     
 
       //Notifications      
       host.showPopupNotification("Atom SQ Initialized");
@@ -471,9 +469,13 @@ public class AtomSQExtension extends ControllerExtension
 
    private void createBaseLayer()
    {
-     
+      //Shift
+      mBaseLayer.bindIsPressed(mShiftButton, this::setIsShiftPressed);
+         
       mBaseLayer.bindPressed(mSongButton, () -> {
-         //boolean isLightOnOffSupplier = mSongLayer.isActivated();
+         // if (mShift)
+         //    mTransport.isArrangerLoopEnabled().toggle();
+         // else
          mInstLayer.deactivate();
          mUserLayer.deactivate();
          mEditLayer.deactivate();
@@ -489,8 +491,6 @@ public class AtomSQExtension extends ControllerExtension
          mSongLayer.deactivate();
          mInstLayer.activate();
          InstMode();
-         //works, tested.
-         //getHost().println(sysexHandler.Hexify("hello world"));
          });
 
       mBaseLayer.bindPressed(mEditorButton, () -> {
@@ -509,8 +509,7 @@ public class AtomSQExtension extends ControllerExtension
          UserMode();
          });
       
-      //Shift
-      mBaseLayer.bindIsPressed(mShiftButton, this::setIsShiftPressed);
+  
 
       //Transport
       mBaseLayer.bindToggle(mClickCountInButton, mTransport.isMetronomeEnabled());
@@ -656,31 +655,19 @@ public class AtomSQExtension extends ControllerExtension
       //button titles
       String[] mTitles= {"Mute", "Solo", "Arm", "Enabled", "Wndw", "active"};
 
-      for (int i = 0; i < 6; i++) 
+      for (int i = 0; i < 3; i++) 
       {
          final String msg = mTitles[i];
-         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.ltblue).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
          mMidiOut.sendSysex(sysex);
       }
-     
-      // //Main line 1 
-      // String pLayout = mApplication.panelLayout().get();
-      // byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.ltblue).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
-      //    mMidiOut.sendSysex(sysex2);
+      for (int i = 3; i < 6; i++) 
+      {
+         final String msg = mTitles[i];
+         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         mMidiOut.sendSysex(sysex);
+      }
 
-      // //Main line 2
-      // String pTrack = mCursorTrack.name().get();
-      // byte[] sysex3 = sB.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.ltblue).addByte(sH.spc).addString(pTrack, pTrack.length()).terminate();
-      //    mMidiOut.sendSysex(sysex3);
-
-
-      // //Main line 1 
-      // String pLayout = mApplication.panelLayout().get();
-      // byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.ltblue).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
-      //    mMidiOut.sendSysex(sysex2);
-      // //mMidiOut.sendSysex("F0 00 01 06 22 12 06 00 5B 5B 00 41 72 72 61 6e 67 65 72 F7");
-      // //line 2  Track:
-      // mMidiOut.sendSysex("F0 00 01 06 22 12 07 00 5B 5B 00 54 72 61 63 6B 3A F7");
       // Encoder 9...must recenter it? 00 and 127 have no other visible effect.
       mMidiOut.sendMidi(176, 29, 00);
       mMidiOut.sendSysex("F0000106221301F7");
@@ -702,18 +689,18 @@ public class AtomSQExtension extends ControllerExtension
       for (int i = 0; i < 6; i++) 
       {
          final String msg = mTitles[i];
-         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.ltblue).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
          mMidiOut.sendSysex(sysex);
       }
 
       // //Main line 1 
       // String pLayout = mApplication.panelLayout().get();
-      // byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.ltblue).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
+      // byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
       //    mMidiOut.sendSysex(sysex2);
 
       // //Main line 2
       // String pTrack = mCursorTrack.name().get();
-      // byte[] sysex3 = sB.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.ltblue).addByte(sH.spc).addString(pTrack, pTrack.length()).terminate();
+      // byte[] sysex3 = sB.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.yellow).addByte(sH.spc).addString(pTrack, pTrack.length()).terminate();
       //    mMidiOut.sendSysex(sysex3);
 
 
@@ -734,7 +721,7 @@ public class AtomSQExtension extends ControllerExtension
       for (int i = 0; i < 6; i++) 
       {
         final String msg = mTitles[i];
-         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.ltblue).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
          mMidiOut.sendSysex(sysex);
       }
 
@@ -743,7 +730,7 @@ public class AtomSQExtension extends ControllerExtension
 
 //   //Main line 1 
 //   String pLayout = mApplication.panelLayout().get();
-//   byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.ltblue).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
+//   byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
 //      mMidiOut.sendSysex(sysex2);
 
      mMidiOut.sendSysex("F0000106221301F7");
@@ -755,13 +742,16 @@ public class AtomSQExtension extends ControllerExtension
    {
 
       //Main line 1 
-      String pLayout = mApplication.panelLayout().get();
-      byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.ltblue).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
+      String pTrack = mCursorTrack.name().get();
+      byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("Track: ", 7).addString(pTrack, pTrack.length()).terminate();
          mMidiOut.sendSysex(sysex2);
+      // String pLayout = mApplication.panelLayout().get();
+      // byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
+      //    mMidiOut.sendSysex(sysex2);
 
       //Main line 2
-      String pTrack = mCursorTrack.name().get();
-      byte[] sysex3 = sB.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.ltblue).addByte(sH.spc).addString("Track: ", 7).addString(pTrack, pTrack.length()).terminate();
+      String pDev = mCursorDevice.name().get();
+      byte[] sysex3 = sB.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.white).addByte(sH.spc).addString("Device: ", 8).addString(pDev, pDev.length()).terminate();
          mMidiOut.sendSysex(sysex3);
 
    }
