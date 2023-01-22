@@ -42,6 +42,8 @@ import com.bitwig.extension.controller.api.Scene;
 import com.bitwig.extension.controller.api.SceneBank;
 import com.bitwig.extension.controller.api.Transport;
 import com.bitwig.extension.api.util.midi.SysexBuilder;
+import com.bitwig.extension.controller.api.Send;
+import com.bitwig.extension.controller.api.SendBank;
 //these are not in the regular APIs...they come from the Bitwig repo though. 
 import com.bitwig.extensions.framework.BooleanObject;
 import com.bitwig.extensions.framework.Layer;
@@ -146,7 +148,8 @@ public class AtomSQExtension extends ControllerExtension
       mMidiIn = host.getMidiInPort(0);
 
       //Cursor Track / Device stuff
-      mCursorTrack = host.createCursorTrack(2, 0);
+      //the first int here dictates the number of sends! this is different than the arrainger track itself, so the number of sends on the actual track are not relevant.
+      mCursorTrack = host.createCursorTrack(6, 0);
      
       mCursorTrack.solo().markInterested();
       mCursorTrack.mute().markInterested();
@@ -156,7 +159,9 @@ public class AtomSQExtension extends ControllerExtension
       mCursorTrack.isActivated ().markInterested();
       mCursorTrack.color ().markInterested();
       mCursorTrack.name().markInterested();
-
+     
+      mSendBank = mCursorTrack.sendBank();
+      //mSendBank.exists().markInterested();
       //Cursor HW Layout creation
  
 
@@ -170,9 +175,7 @@ public class AtomSQExtension extends ControllerExtension
      
       mRemoteControls = mCursorDevice.createCursorRemoteControlsPage("CursorPage1", 8, "");
       mRemoteControls.setHardwareLayout(HardwareControlType.ENCODER, 8);
-      //Encoder indication
-      for (int i = 0; i < 8; ++i)
-      mRemoteControls.getParameter(i).setIndication(true);
+      //remoted RC set indication from here, as it was otherwise always indicated, even out of focus in Mix mode
     
 
       //atm these do not do anything, but they may help with getting the lights to work on the arrow keys.
@@ -518,8 +521,6 @@ public class AtomSQExtension extends ControllerExtension
          UserMode();
          });
       
-  
-
       //Transport
       mBaseLayer.bindToggle(mClickCountInButton, mTransport.isMetronomeEnabled());
 
@@ -550,8 +551,6 @@ public class AtomSQExtension extends ControllerExtension
       mBaseLayer.bindToggle(mLeftButton, mCursorDevice.selectPreviousAction(), mCursorDevice.hasPrevious());
       mBaseLayer.bindToggle(mRightButton, mCursorDevice.selectNextAction(), mCursorDevice.hasNext());
 
-
-  
    }
 
    private void createInstLayer()
@@ -587,16 +586,29 @@ public class AtomSQExtension extends ControllerExtension
 
       //initialize the bindings for this layer
       //Display buttons
-      mSongLayer.bindToggle (m1Button, mCursorDevice.isEnabled());
-      mSongLayer.bindToggle(m2Button, mCursorDevice.isWindowOpen());
-      // mSongLayer.bindToggle(m3Button, mCursorTrack.arm());
-      // mSongLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
-      // mSongLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
-      // mSongLayer.bindToggle(m6Button, mCursorTrack.isActivated());
+      mSongLayer.bindToggle(m1Button, mCursorTrack.solo() );
+      mSongLayer.bindToggle(m2Button, mCursorTrack.mute());
+      mSongLayer.bindToggle(m3Button, mCursorTrack.arm());
+      mSongLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
+      mSongLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
+      mSongLayer.bindToggle(m6Button, mCursorTrack.isActivated());
         
       //Encoders
-      mSongLayer.bind (mEncoders[4], mCursorTrack.pan());
-      mSongLayer.bind (mEncoders[5], mCursorTrack.volume());
+      mSongLayer.bind (mEncoders[6], mCursorTrack.pan());
+      mSongLayer.bind (mEncoders[7], mCursorTrack.volume());
+
+      //Encoders
+      //this is not useful based on the actual arranger track, the cursor track is something else. see docs of cursor track
+      // int sends = mSendBank.getSizeOfBank();
+      // String sendsString = Integer.toString(sends);
+      // getHost().println(sendsString);
+      for (int i = 0; i < 6 ; i++)
+      {
+  
+         final Parameter parameter = mSendBank.getItemAt(i);
+         final RelativeHardwareKnob encoder = mEncoders[i];
+         mSongLayer.bind(encoder, parameter);
+      }
 
    }
 
@@ -652,6 +664,35 @@ public class AtomSQExtension extends ControllerExtension
     //       Modes        //
    ////////////////////////
   
+   public void updateDisplay ()
+   {
+
+      //Main line 1 
+      String pTrack = mCursorTrack.name().get();
+      byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("Track: ", 7).addString(pTrack, pTrack.length()).terminate();
+         mMidiOut.sendSysex(sysex2);
+      // String pLayout = mApplication.panelLayout().get();
+      // byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
+      //    mMidiOut.sendSysex(sysex2);
+
+      //Main line 2
+      String pDev = mCursorDevice.name().get();
+      byte[] sysex3 = sB.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.white).addByte(sH.spc).addString("Device: ", 8).addString(pDev, pDev.length()).terminate();
+         mMidiOut.sendSysex(sysex3);
+
+   }
+
+   // public void updateSends ()
+   // {
+   //    if (mSendBank.exists().get())
+   //    {
+   //    int sends = mSendBank.getSizeOfBank();
+   //    String sendsString = Integer.toString(sends);
+   //    getHost().println(sendsString);
+   //    }
+   // }
+
+
    private void InstMode ()
    {
       getHost().println("InstMode");
@@ -748,25 +789,6 @@ public class AtomSQExtension extends ControllerExtension
 
    }
 
-
-   public void updateDisplay ()
-   {
-
-      //Main line 1 
-      String pTrack = mCursorTrack.name().get();
-      byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("Track: ", 7).addString(pTrack, pTrack.length()).terminate();
-         mMidiOut.sendSysex(sysex2);
-      // String pLayout = mApplication.panelLayout().get();
-      // byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
-      //    mMidiOut.sendSysex(sysex2);
-
-      //Main line 2
-      String pDev = mCursorDevice.name().get();
-      byte[] sysex3 = sB.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.white).addByte(sH.spc).addString("Device: ", 8).addString(pDev, pDev.length()).terminate();
-         mMidiOut.sendSysex(sysex3);
-
-   }
-
    private void UserMode ()
    {
       getHost().println("UserMode");
@@ -791,8 +813,8 @@ public class AtomSQExtension extends ControllerExtension
       //this.transportHandler.updateLED ();
       //this turns on the lights (apparently) by sending the 127 to the relevant CC mapped to the button in the Hardware..whatever, it works. :)
       mHardwareSurface.updateHardware();
-
       updateDisplay();
+      //updateSends();
    }
 
    @Override
@@ -809,6 +831,9 @@ public class AtomSQExtension extends ControllerExtension
      ////////////////////////
     // Host Proxy Objects //
    ////////////////////////
+   private SendBank mSendBank;
+   public int sends;
+
   public static CursorTrack mCursorTrack;
 
   //changed from pinnable cursor device
