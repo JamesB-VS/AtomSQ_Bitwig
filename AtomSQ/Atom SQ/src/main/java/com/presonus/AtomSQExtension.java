@@ -117,12 +117,7 @@ public class AtomSQExtension extends ControllerExtension
    private static final Color ORANGE = Color.fromRGB(1, 1, 0);
    private static final Color BLUE = Color.fromRGB(0, 0, 1);
 
-   //private final int []          ledCache             = new int [128];
-  //final AtomSQExtension.InstMode instMode;
-  //final AtomSQExtension.SongMode songMode;
- // final Hexify hexify = new Hexify();
 
- //final SysexHandler sysexHandler = new SysexHandler();
  final SysexHandler sH = new SysexHandler();
  public static final SysexBuilder sB = new SysexBuilder();
 
@@ -140,7 +135,8 @@ public class AtomSQExtension extends ControllerExtension
       //added final here in testing for method in sysexhandler...might break something.
       mApplication = host.createApplication();
       mApplication.panelLayout().markInterested();
-    
+      mApplication.canRedo().markInterested();
+      mApplication.canUndo().markInterested();
 
       final MidiIn midiIn = host.getMidiInPort(0);
       midiIn.setMidiCallback((ShortMidiMessageReceivedCallback)msg -> onMidi0(msg));
@@ -471,11 +467,24 @@ public class AtomSQExtension extends ControllerExtension
    {
       //Shift
       mBaseLayer.bindIsPressed(mShiftButton, this::setIsShiftPressed);
+
+      //Master Buttons
+      //Encoder 9 could adjust any button value that has a range of adjustments. Currently they are all toggles.
+      //left and right shift function for undo/redo
+      mBaseLayer.bindPressed(mBackButton, () -> {
+         if (mShift)
+            mApplication.undo(); 
+            getHost().showPopupNotification("Undo");
+      });
          
+      mBaseLayer.bindPressed(mForwardButton, () -> {
+         if (mShift)
+         mApplication.redo(); 
+         getHost().showPopupNotification("Redo");
+      });
+
+      //Menu Buttons
       mBaseLayer.bindPressed(mSongButton, () -> {
-         // if (mShift)
-         //    mTransport.isArrangerLoopEnabled().toggle();
-         // else
          mInstLayer.deactivate();
          mUserLayer.deactivate();
          mEditLayer.deactivate();
@@ -540,6 +549,8 @@ public class AtomSQExtension extends ControllerExtension
       mBaseLayer.bindToggle(mDownButton, mCursorTrack.selectNextAction(), mCursorTrack.hasNext());
       mBaseLayer.bindToggle(mLeftButton, mCursorDevice.selectPreviousAction(), mCursorDevice.hasPrevious());
       mBaseLayer.bindToggle(mRightButton, mCursorDevice.selectNextAction(), mCursorDevice.hasNext());
+
+
   
    }
 
