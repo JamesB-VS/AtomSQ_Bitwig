@@ -44,6 +44,8 @@ import com.bitwig.extension.controller.api.Transport;
 import com.bitwig.extension.api.util.midi.SysexBuilder;
 import com.bitwig.extension.controller.api.Send;
 import com.bitwig.extension.controller.api.SendBank;
+import com.bitwig.extension.controller.api.MasterTrack;
+
 //these are not in the regular APIs...they come from the Bitwig repo though. 
 import com.bitwig.extensions.framework.BooleanObject;
 import com.bitwig.extensions.framework.Layer;
@@ -150,7 +152,6 @@ public class AtomSQExtension extends ControllerExtension
       //Cursor Track / Device stuff
       //the first int here dictates the number of sends! this is different than the arrainger track itself, so the number of sends on the actual track are not relevant.
       mCursorTrack = host.createCursorTrack(6, 0);
-     
       mCursorTrack.solo().markInterested();
       mCursorTrack.mute().markInterested();
       mCursorTrack.arm().markInterested();
@@ -159,29 +160,32 @@ public class AtomSQExtension extends ControllerExtension
       mCursorTrack.isActivated ().markInterested();
       mCursorTrack.color ().markInterested();
       mCursorTrack.name().markInterested();
-     
+      mCursorTrack.hasPrevious().markInterested();
+      mCursorTrack.hasNext().markInterested();
+      mCursorTrack.monitorMode().markInterested(); 
       mSendBank = mCursorTrack.sendBank();
-      //mSendBank.exists().markInterested();
+      mCursorTrack.monitorMode().markInterested();
+      mCursorTrack.isMonitoring().markInterested();
+
+      //MasterTrack
+      mMasterTrack = host.createMasterTrack(0);
+      mMasterTrack.volume().markInterested();
+
       //Cursor HW Layout creation
- 
 
       mCursorDevice = mCursorTrack.createCursorDevice("Current", "Current", 8,  CursorDeviceFollowMode.FOLLOW_SELECTION);
-
       mCursorDevice.isEnabled ().markInterested ();
       mCursorDevice.isWindowOpen ().markInterested ();
       mCursorDevice.name().markInterested();
-     
+      mCursorDevice.isRemoteControlsSectionVisible().markInterested();
+      //mCursorDevice.isMacroSectionVisible().markInterested();
+      mCursorDevice.isExpanded ().markInterested ();
       //create RCs for encoders
      
       mRemoteControls = mCursorDevice.createCursorRemoteControlsPage("CursorPage1", 8, "");
       mRemoteControls.setHardwareLayout(HardwareControlType.ENCODER, 8);
       //remoted RC set indication from here, as it was otherwise always indicated, even out of focus in Mix mode
     
-
-      //atm these do not do anything, but they may help with getting the lights to work on the arrow keys.
-      mCursorTrack.hasPrevious().markInterested();
-      mCursorTrack.hasNext().markInterested();
-
       //Transport
       mTransport = host.createTransport();
       mTransport.isPlaying().markInterested();
@@ -411,9 +415,17 @@ public class AtomSQExtension extends ControllerExtension
       encoder.setIndexInGroup(index);
       //here you can adjust the last number to adjust the encoder sensitivity wthin BW. Smaller numbers are jumpy, but move faster
       //the knobs ARE speed sensitive
+      if (index <= 7){
       encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, CC_ENCODER_1 + index, 100));
-
+      }
+      //as the CC for encoder 9 is not sequencial, have to do this. 
+      else {
+        encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, CC_ENCODER_9,100));
+        //encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBit2CCValueMatcher(0, CC_ENCODER_9, 50));
+      }
+     
       mEncoders[index] = encoder;
+
    }
 
    private void save()
@@ -447,12 +459,17 @@ public class AtomSQExtension extends ControllerExtension
       mSongLayer = createLayer("Song");
       mEditLayer = createLayer ("Edit");
       mUserLayer = createLayer("User");
+      mInst2Layer = createLayer ("Inst2");
+      mShiftLayer = createLayer ("Shift");
 
       createBaseLayer();
       createInstLayer();
       createSongLayer();
       createEditLayer();
       createUserLayer();
+
+      createInst2Layer();
+      createShiftLayer();
 
       //could add the mark-intereted here, but they do nto work on this type for some reason
       //mSongLayer.isActive().markInterested();
@@ -471,26 +488,52 @@ public class AtomSQExtension extends ControllerExtension
       //Shift
       mBaseLayer.bindIsPressed(mShiftButton, this::setIsShiftPressed);
 
+      //alternative, for a shift layer:
+      mBaseLayer.bindPressed(mShiftButton, mShiftLayer.getActivateAction());
+      mBaseLayer.bindReleased(mShiftButton, mShiftLayer.getDeactivateAction());
+
       //Master Buttons
       //Encoder 9 could adjust any button value that has a range of adjustments. Currently they are all toggles.
       //left and right shift function for undo/redo
       mBaseLayer.bindPressed(mBackButton, () -> {
-         if (mShift)
+         if (mShift){
             mApplication.undo(); 
             getHost().showPopupNotification("Undo");
+         }
+         else if (mInst2Layer.isActive()) {
+            mInst2Layer.deactivate();
+            mInstLayer.activate();
+            InstMode();
+         }
       });
          
       mBaseLayer.bindPressed(mForwardButton, () -> {
-         if (mShift)
+         if (mShift) {
          mApplication.redo(); 
          getHost().showPopupNotification("Redo");
+         }
+         else if (mInstLayer.isActive()) {
+            mInstLayer.deactivate();
+            mInst2Layer.activate();
+            Inst2Mode();
+         }
+
       });
 
+   //    mBaseLayer.bind(mEncoders[8], () ->{
+   //       if (mShift) {
+   //       mMasterTrack.volume();
+   //       }
+   // });
+
+
+   
       //Menu Buttons
       mBaseLayer.bindPressed(mSongButton, () -> {
          mInstLayer.deactivate();
          mUserLayer.deactivate();
          mEditLayer.deactivate();
+         mInst2Layer.deactivate();
          mSongLayer.activate();
          SongMode(); 
          });
@@ -501,6 +544,7 @@ public class AtomSQExtension extends ControllerExtension
          mUserLayer.deactivate();
          mEditLayer.deactivate();
          mSongLayer.deactivate();
+         mInst2Layer.deactivate();
          mInstLayer.activate();
          InstMode();
          });
@@ -509,6 +553,7 @@ public class AtomSQExtension extends ControllerExtension
          mInstLayer.deactivate();
          mUserLayer.deactivate();
          mSongLayer.deactivate();
+         mInst2Layer.deactivate();
          mEditLayer.activate();
          EditMode();
          });
@@ -517,6 +562,7 @@ public class AtomSQExtension extends ControllerExtension
          mInstLayer.deactivate();
          mEditLayer.deactivate();
          mSongLayer.deactivate();
+         mInst2Layer.deactivate();
          mUserLayer.activate();
          UserMode();
          });
@@ -550,11 +596,22 @@ public class AtomSQExtension extends ControllerExtension
       mBaseLayer.bindToggle(mDownButton, mCursorTrack.selectNextAction(), mCursorTrack.hasNext());
       mBaseLayer.bindToggle(mLeftButton, mCursorDevice.selectPreviousAction(), mCursorDevice.hasPrevious());
       mBaseLayer.bindToggle(mRightButton, mCursorDevice.selectNextAction(), mCursorDevice.hasNext());
+   
+   }
+
+   private void createShiftLayer()
+   {
+
+      //this can coincide with other shift functions in the base layer!
+   mShiftLayer.bind(mEncoders[8], mMasterTrack.volume());
+
 
    }
 
    private void createInstLayer()
    {
+     // mInstLayer.bind(mEncoders[8], mMasterTrack.volume());
+
       getHost().println("InstLayer active");
       //initialize the bindings for this layer
       getHost().println("Inst");
@@ -564,7 +621,7 @@ public class AtomSQExtension extends ControllerExtension
       mInstLayer.bindToggle(m3Button, mCursorTrack.arm());
       mInstLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
       mInstLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
-      mInstLayer.bindToggle(m6Button, mCursorTrack.isActivated());
+      //mInstLayer.bindToggle(m6Button, mCursorTrack.isActivated());
         
       //Encoders
       for (int i = 0; i < 8; i++)
@@ -574,6 +631,60 @@ public class AtomSQExtension extends ControllerExtension
 
          mInstLayer.bind(encoder, parameter);
       }
+
+   }
+
+   private void createInst2Layer()
+   {
+      //getHost().println("InstLayer active");
+      //initialize the bindings for this layer
+      //getHost().println("Inst");
+
+      //mInst2Layer.bindToggle(m1Button, mCursorTrack.solo() ); //source
+      //mInst2Layer.bindToggle(m2Button, mCursorTrack.mute()); //dest
+      
+      // mInst2Layer.bindPressed(m3Button,() -> {
+      //    String mon = mCursorTrack.monitorMode().get();
+      //    getHost().println(mon);
+      //    // String next;
+      //    // String modes[] = {"ON", "OFF", "AUTO"};
+      //    // mCursorTrack.monitorMode().set(() -> {
+      //    //    switch (mon) {
+      //    //       case "ON":
+      //    //       return "OFF";
+      //    //       case "OFF":
+      //    //       return "AUTO";
+      //    //       case "AUTO":
+      //    //       return "ON";
+      //    //       // default:
+      //    //       //    break;
+      //    //    };
+      //    // });
+      //    //keep
+         
+  
+      //    }); //Monitor mode
+      mInst2Layer.bindToggle(m4Button, mCursorDevice.isExpanded(), mCursorDevice.isExpanded()); //expand
+      mInst2Layer.bindToggle(m5Button, mCursorDevice.isRemoteControlsSectionVisible(), mCursorDevice.isRemoteControlsSectionVisible()); //controls
+      mInst2Layer.bindToggle(m3Button, mCursorTrack.isActivated());
+      //mInst2Layer.bindToggle(m5Button, mCursorDevice.isMacroSectionVisible()); //macro is wrong, want modulation, cannot find rn.
+     
+      //mInst2Layer.bind(mEncoders[8], mCursorTrack.monitorMode().set());
+/*    for the source, dest, mon mode
+      each button should specify focus for Enc 9
+         lights up in focus
+         assigns Enc9 to function
+      Enc9 should change the setting. 
+         updates the setting on the display
+            need array of possible options
+            actual state name needs to be fed into sysex, updated in flush
+
+         changes in BW
+
+
+      
+      
+      */
 
    }
   
@@ -591,7 +702,7 @@ public class AtomSQExtension extends ControllerExtension
       mSongLayer.bindToggle(m3Button, mCursorTrack.arm());
       mSongLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
       mSongLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
-      mSongLayer.bindToggle(m6Button, mCursorTrack.isActivated());
+      //mSongLayer.bindToggle(m6Button, mCursorTrack.isActivated());
         
       //Encoders
       mSongLayer.bind (mEncoders[6], mCursorTrack.pan());
@@ -617,7 +728,10 @@ public class AtomSQExtension extends ControllerExtension
       //notifications
       getHost().println("EditLayer active");
       getHost().println("Edit");
+     mEditLayer.bind(mEncoders[7], mMasterTrack.volume());
       //deactivate other Mode layers
+      mEditLayer.bind (mEncoders[6], mCursorTrack.pan());
+      mEditLayer.bind (mEncoders[8], mCursorTrack.volume());
 
       //initialize the bindings for this layer
       //Display buttons
@@ -695,8 +809,8 @@ public class AtomSQExtension extends ControllerExtension
 
    private void InstMode ()
    {
-      getHost().println("InstMode");
-      getHost().showPopupNotification("Instrument Mode");
+      //getHost().println("InstMode");
+      //getHost().showPopupNotification("Instrument Mode");
       mApplication.setPanelLayout("ARRANGE");
       //activate layer, deactivate others (for encoders)
      // mInstLayer.activate();
@@ -705,7 +819,7 @@ public class AtomSQExtension extends ControllerExtension
       mMidiOut.sendSysex("F0000106221400F7");
      
       //button titles
-      String[] mTitles= {"Mute", "Solo", "Arm", "Enabled", "Wndw", "active"};
+      String[] mTitles= {"Mute", "Solo", "Arm", "Enabled", "Wndw", ""};
 
       for (int i = 0; i < 3; i++) 
       {
@@ -725,6 +839,42 @@ public class AtomSQExtension extends ControllerExtension
       mMidiOut.sendSysex("F0000106221301F7");
    }
   
+   private void Inst2Mode ()
+   {
+      //getHost().println("InstMode");
+      //getHost().showPopupNotification("Instrument Mode");
+      mApplication.setPanelLayout("ARRANGE");
+      //activate layer, deactivate others (for encoders)
+     // mInstLayer.activate();
+      //configure display
+      mMidiOut.sendSysex("F0000106221300F7");
+      mMidiOut.sendSysex("F0000106221400F7");
+     
+      //button titles
+      //temporarily removing the bits that do not yet work yet
+      //String[] mTitles= {"Source", "Dest", "MonMode", "Expand", "Macro", "Controls"};
+      String[] mTitles= {"", "", "Active", "Expand", "Controls", ""};
+      //Track: source, monitor, group?, group expand, destination
+      //Device: presets? chain, createDeviceBrowser, isExpanded, isMacroSelectionVisible, isRemoteControlsSectionVisible()
+      
+      for (int i = 0; i < 3; i++) 
+      {
+         final String msg = mTitles[i];
+         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         mMidiOut.sendSysex(sysex);
+      }
+      for (int i = 3; i < 6; i++) 
+      {
+         final String msg = mTitles[i];
+         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         mMidiOut.sendSysex(sysex);
+      }
+
+      // Encoder 9...must recenter it? 00 and 127 have no other visible effect.
+      mMidiOut.sendMidi(176, 29, 00);
+      mMidiOut.sendSysex("F0000106221301F7");
+   }
+
    private void SongMode ()
    {
       getHost().println("SongMode");
@@ -736,12 +886,18 @@ public class AtomSQExtension extends ControllerExtension
      mMidiOut.sendSysex("F0000106221400F7");
      
       //button titles
-      String[] mTitles= {"Mute", "Solo", "Arm", "Enabled", "Wndw", "active"};
+      String[] mTitles= {"Mute", "Solo", "Arm", "Enabled", "Wndw", ""};
 
-      for (int i = 0; i < 6; i++) 
+      for (int i = 0; i < 3; i++) 
       {
          final String msg = mTitles[i];
          byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         mMidiOut.sendSysex(sysex);
+      }
+      for (int i = 3; i < 6; i++) 
+      {
+         final String msg = mTitles[i];
+         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
          mMidiOut.sendSysex(sysex);
       }
 
@@ -831,6 +987,7 @@ public class AtomSQExtension extends ControllerExtension
      ////////////////////////
     // Host Proxy Objects //
    ////////////////////////
+   private MasterTrack mMasterTrack;
    private SendBank mSendBank;
    public int sends;
 
@@ -878,7 +1035,7 @@ private Application mApplication;
      }
   };
 
-private Layer mBaseLayer, mInstLayer, mSongLayer, mEditLayer, mUserLayer;
+private Layer mBaseLayer, mInstLayer, mSongLayer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer;
 
 //sdfgsdfgsdfgsdfgsdfgsdfgsfdg
 
