@@ -592,11 +592,28 @@ public class AtomSQExtension extends ControllerExtension
       }, mTransport.isArrangerRecordEnabled());
 
       //Nav buttons
-      mBaseLayer.bindToggle(mUpButton, mCursorTrack.selectPreviousAction(), mCursorTrack.hasPrevious());
-      mBaseLayer.bindToggle(mDownButton, mCursorTrack.selectNextAction(), mCursorTrack.hasNext());
-      mBaseLayer.bindToggle(mLeftButton, mCursorDevice.selectPreviousAction(), mCursorDevice.hasPrevious());
-      mBaseLayer.bindToggle(mRightButton, mCursorDevice.selectNextAction(), mCursorDevice.hasNext());
-   
+      // mBaseLayer.bindToggle(mUpButton, mCursorTrack.selectPreviousAction(), mCursorTrack.hasPrevious());
+      // mBaseLayer.bindToggle(mDownButton, mCursorTrack.selectNextAction(), mCursorTrack.hasNext());
+      // mBaseLayer.bindToggle(mLeftButton, mCursorDevice.selectPreviousAction(), mCursorDevice.hasPrevious());
+      // mBaseLayer.bindToggle(mRightButton, mCursorDevice.selectNextAction(), mCursorDevice.hasNext());
+
+      mBaseLayer.bindPressed(mUpButton, () ->{
+         mApplication.arrowKeyUp();
+      } );
+      mBaseLayer.bindPressed(mDownButton, () ->{
+         mApplication.arrowKeyDown();
+      } );
+      mBaseLayer.bindPressed(mLeftButton, () ->{
+         mApplication.arrowKeyLeft();
+      } );
+      mBaseLayer.bindPressed(mRightButton, () ->{
+         mApplication.arrowKeyRight();
+      } );
+      
+
+      // mBaseLayer.bindPressed(mDownButton, mApplication.focusPanelBelow(), mTransport.isArrangerRecordEnabled());
+      // mBaseLayer.bindPressed(mLeftButton, mApplication.focusPanelToLeft(), mTransport.isArrangerRecordEnabled());
+      // mBaseLayer.bindPressed(mRightButton, mApplication.focusPanelToRight(), mTransport.isArrangerRecordEnabled());
    }
 
    private void createShiftLayer()
@@ -604,6 +621,18 @@ public class AtomSQExtension extends ControllerExtension
 
       //this can coincide with other shift functions in the base layer!
    mShiftLayer.bind(mEncoders[8], mMasterTrack.volume());
+   mShiftLayer.bindPressed(mUpButton, () ->{
+      mApplication.focusPanelAbove();
+   } );
+   mShiftLayer.bindPressed(mDownButton, () ->{
+      mApplication.focusPanelBelow();
+   } );
+   mShiftLayer.bindPressed(mLeftButton, () ->{
+      mApplication.focusPanelToLeft();
+   } );
+   mShiftLayer.bindPressed(mRightButton, () ->{
+      mApplication.focusPanelToRight();
+   } );
 
 
    }
