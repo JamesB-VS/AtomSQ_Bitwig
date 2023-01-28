@@ -6,7 +6,9 @@ import java.util.function.Supplier;
 //from Hardware
 //import java.util.Arrays;
 
- import com.bitwig.extension.controller.api.CursorDevice;
+import javax.net.ssl.HostnameVerifier;
+
+import com.bitwig.extension.controller.api.CursorDevice;
 //FromATOM
 import com.bitwig.extension.api.Color;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
@@ -45,6 +47,7 @@ import com.bitwig.extension.api.util.midi.SysexBuilder;
 import com.bitwig.extension.controller.api.Send;
 import com.bitwig.extension.controller.api.SendBank;
 import com.bitwig.extension.controller.api.MasterTrack;
+import com.bitwig.extension.controller.api.HardwareActionBindable;
 
 //these are not in the regular APIs...they come from the Bitwig repo though. 
 import com.bitwig.extensions.framework.BooleanObject;
@@ -191,7 +194,9 @@ public class AtomSQExtension extends ControllerExtension
       mTransport.isPlaying().markInterested();
       mTransport.isArrangerRecordEnabled ().markInterested ();
       mTransport.isMetronomeEnabled ().markInterested();
-   
+      mTransport.playStartPosition().markInterested();
+      mTransport.playPositionInSeconds().markInterested();
+
       //the HW init
       mMidiOut.sendMidi(176,29,00);
       mMidiOut.sendMidi(176,15,00);
@@ -420,8 +425,10 @@ public class AtomSQExtension extends ControllerExtension
       }
       //as the CC for encoder 9 is not sequencial, have to do this. 
       else {
-        encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, CC_ENCODER_9,100));
-        //encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBit2CCValueMatcher(0, CC_ENCODER_9, 50));
+        encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, CC_ENCODER_9, 100));
+        //this could be worked on...the stepped encoder does not move as smoothly in BW as the others.
+        encoder.setStepSize(1 /138.0);
+
       }
      
       mEncoders[index] = encoder;
@@ -445,6 +452,32 @@ public class AtomSQExtension extends ControllerExtension
          mLayers.setGlobalSensitivity(value ? 0.1 : 1);
       }
    }
+
+/*    private void changePlayPositionOLD() 
+   {
+      final double position = mTransport.playStartPosition().get();
+      double resolution = 0.25;
+      double newPos = position + resolution;
+      if ( newPos < 0) {
+      newPos = 0;
+      }
+      if (position != newPos) {
+         mTransport.playStartPosition().set(newPos);
+         if (mTransport.isPlaying().get()) {
+            mTransport.jumpToPlayStartPosition();
+         }
+      }
+   }
+ */
+
+   private void changePlayPosition (final Double num)
+   {
+      //this has to be abstracted, cannot set the start position directly int he binding. It returns an error about void.
+      getHost().println("booyah!");
+      mTransport.playStartPosition().inc(num);
+      //final HardwareActionBindable dec = mTransport.playStartPosition().inc(-1.0);
+   }  
+
 
      ////////////////////////
     //       Layers       //
@@ -494,6 +527,19 @@ public class AtomSQExtension extends ControllerExtension
 
       //Master Buttons
       //Encoder 9 could adjust any button value that has a range of adjustments. Currently they are all toggles.
+     // mBaseLayer.bind(mEncoders[8], () ->{changePlayPosition(1);} );
+     // mBaseLayer.bind(mEncoders[8], ()  -> {mTransport.playStartPosition().inc(1.0);} );
+     final HardwareActionBindable inc = getHost().createAction(() ->  changePlayPosition(1.0),  () -> "+");;
+      final HardwareActionBindable dec = getHost().createAction(() -> changePlayPosition(-1.0),  () -> "-");
+      mBaseLayer.bind(mEncoders[8], getHost().createRelativeHardwareControlStepTarget(inc, dec));
+    // mBaseLayer.bind(mEncoders[8], changePlayPosition().inc(), changePlayPosition().dec());
+
+
+    // mBaseLayer.bind(mEncoders[8],() ->{mTransport.playStartPosition().inc(-1.0);}, () -> {mTransport.playStartPosition().inc(1.0);});
+
+     //this returns a beattimevalue, which cannot convert to anything in Layer script.
+     //mBaseLayer.bind(mEncoders[8], mTransport.playPosition() );
+
       //left and right shift function for undo/redo
       mBaseLayer.bindPressed(mBackButton, () -> {
          if (mShift){
@@ -592,28 +638,11 @@ public class AtomSQExtension extends ControllerExtension
       }, mTransport.isArrangerRecordEnabled());
 
       //Nav buttons
-      // mBaseLayer.bindToggle(mUpButton, mCursorTrack.selectPreviousAction(), mCursorTrack.hasPrevious());
-      // mBaseLayer.bindToggle(mDownButton, mCursorTrack.selectNextAction(), mCursorTrack.hasNext());
-      // mBaseLayer.bindToggle(mLeftButton, mCursorDevice.selectPreviousAction(), mCursorDevice.hasPrevious());
-      // mBaseLayer.bindToggle(mRightButton, mCursorDevice.selectNextAction(), mCursorDevice.hasNext());
+      mBaseLayer.bindToggle(mUpButton, mCursorTrack.selectPreviousAction(), mCursorTrack.hasPrevious());
+      mBaseLayer.bindToggle(mDownButton, mCursorTrack.selectNextAction(), mCursorTrack.hasNext());
+      mBaseLayer.bindToggle(mLeftButton, mCursorDevice.selectPreviousAction(), mCursorDevice.hasPrevious());
+      mBaseLayer.bindToggle(mRightButton, mCursorDevice.selectNextAction(), mCursorDevice.hasNext());
 
-      mBaseLayer.bindPressed(mUpButton, () ->{
-         mApplication.arrowKeyUp();
-      } );
-      mBaseLayer.bindPressed(mDownButton, () ->{
-         mApplication.arrowKeyDown();
-      } );
-      mBaseLayer.bindPressed(mLeftButton, () ->{
-         mApplication.arrowKeyLeft();
-      } );
-      mBaseLayer.bindPressed(mRightButton, () ->{
-         mApplication.arrowKeyRight();
-      } );
-      
-
-      // mBaseLayer.bindPressed(mDownButton, mApplication.focusPanelBelow(), mTransport.isArrangerRecordEnabled());
-      // mBaseLayer.bindPressed(mLeftButton, mApplication.focusPanelToLeft(), mTransport.isArrangerRecordEnabled());
-      // mBaseLayer.bindPressed(mRightButton, mApplication.focusPanelToRight(), mTransport.isArrangerRecordEnabled());
    }
 
    private void createShiftLayer()
@@ -761,7 +790,8 @@ public class AtomSQExtension extends ControllerExtension
       //deactivate other Mode layers
       mEditLayer.bind (mEncoders[6], mCursorTrack.pan());
       mEditLayer.bind (mEncoders[8], mCursorTrack.volume());
-
+      //this works as an example for adjusting the play start. save.
+      mEditLayer.bindPressed(m4Button, () -> {mTransport.playStartPosition().inc(1.0);});
       //initialize the bindings for this layer
       //Display buttons
       //mSongLayer.bindToggle (m1Button, mCursorDevice.isEnabled());
@@ -843,6 +873,13 @@ public class AtomSQExtension extends ControllerExtension
       mApplication.setPanelLayout("ARRANGE");
       //activate layer, deactivate others (for encoders)
      // mInstLayer.activate();
+
+        //lights on buttons
+        mMidiOut.sendMidi(176, CC_SONG, 00);
+        mMidiOut.sendMidi(176, CC_INST, 127);
+        mMidiOut.sendMidi(176, CC_EDIT, 00);
+        mMidiOut.sendMidi(176, CC_USER, 00);
+
       //configure display
       mMidiOut.sendSysex("F0000106221300F7");
       mMidiOut.sendSysex("F0000106221400F7");
@@ -865,6 +902,8 @@ public class AtomSQExtension extends ControllerExtension
 
       // Encoder 9...must recenter it? 00 and 127 have no other visible effect.
       mMidiOut.sendMidi(176, 29, 00);
+      //turn on button light
+
       mMidiOut.sendSysex("F0000106221301F7");
    }
   
@@ -911,6 +950,13 @@ public class AtomSQExtension extends ControllerExtension
      
       mApplication.setPanelLayout("MIX");
 
+              //lights on buttons
+              mMidiOut.sendMidi(176, CC_SONG, 127);
+              mMidiOut.sendMidi(176, CC_INST, 00);
+              mMidiOut.sendMidi(176, CC_EDIT, 00);
+              mMidiOut.sendMidi(176, CC_USER, 00);
+
+
      mMidiOut.sendSysex("F0000106221300F7");
      mMidiOut.sendSysex("F0000106221400F7");
      
@@ -949,6 +995,14 @@ public class AtomSQExtension extends ControllerExtension
    {
       //getHost().println("EditMode");
       getHost().showPopupNotification("Edit Mode");
+
+              //lights on buttons
+              mMidiOut.sendMidi(176, CC_SONG, 00);
+              mMidiOut.sendMidi(176, CC_INST, 00);
+              mMidiOut.sendMidi(176, CC_EDIT, 127);
+              mMidiOut.sendMidi(176, CC_USER, 00);
+
+
       mMidiOut.sendSysex("F0000106221300F7");
       mMidiOut.sendSysex("F0000106221400F7");
 
@@ -978,7 +1032,14 @@ public class AtomSQExtension extends ControllerExtension
    {
       getHost().println("UserMode");
       getHost().showPopupNotification("User Mode");
-     // mSongLayer.activate();
+      
+              //lights on buttons
+              mMidiOut.sendMidi(176, CC_SONG, 00);
+              mMidiOut.sendMidi(176, CC_INST, 00);
+              mMidiOut.sendMidi(176, CC_EDIT, 00);
+              mMidiOut.sendMidi(176, CC_USER, 127);
+
+      // mSongLayer.activate();
      mMidiOut.sendSysex("F0000106221401F7");
      mMidiOut.sendSysex("F0000106221301F7");
    }
@@ -1016,6 +1077,7 @@ public class AtomSQExtension extends ControllerExtension
      ////////////////////////
     // Host Proxy Objects //
    ////////////////////////
+   //private ControllerHost mHost;
    private MasterTrack mMasterTrack;
    private SendBank mSendBank;
    public int sends;
