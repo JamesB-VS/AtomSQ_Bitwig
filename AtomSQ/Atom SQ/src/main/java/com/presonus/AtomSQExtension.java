@@ -3,6 +3,7 @@ package com.presonus;
 //frop ATOM
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.lang.Math;
 //from Hardware
 //import java.util.Arrays;
 
@@ -252,10 +253,7 @@ public class AtomSQExtension extends ControllerExtension
 
       //Modes
       InstMode();
-    
-      
-     
-
+   
       //Notifications      
       host.showPopupNotification("Atom SQ Initialized");
    }
@@ -425,9 +423,9 @@ public class AtomSQExtension extends ControllerExtension
       }
       //as the CC for encoder 9 is not sequencial, have to do this. 
       else {
-        encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, CC_ENCODER_9, 100));
+        encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, CC_ENCODER_9, 127));
         //this could be worked on...the stepped encoder does not move as smoothly in BW as the others.
-        encoder.setStepSize(1 /138.0);
+       // encoder.setStepSize(4.0);
 
       }
      
@@ -453,30 +451,30 @@ public class AtomSQExtension extends ControllerExtension
       }
    }
 
-/*    private void changePlayPositionOLD() 
-   {
-      final double position = mTransport.playStartPosition().get();
-      double resolution = 0.25;
-      double newPos = position + resolution;
-      if ( newPos < 0) {
-      newPos = 0;
-      }
-      if (position != newPos) {
-         mTransport.playStartPosition().set(newPos);
-         if (mTransport.isPlaying().get()) {
-            mTransport.jumpToPlayStartPosition();
-         }
-      }
-   }
- */
-
    private void changePlayPosition (final Double num)
    {
+      
       //this has to be abstracted, cannot set the start position directly int he binding. It returns an error about void.
-      getHost().println("booyah!");
-      mTransport.playStartPosition().inc(num);
-      //final HardwareActionBindable dec = mTransport.playStartPosition().inc(-1.0);
-   }  
+      final double pos = mTransport.playStartPosition().get();
+      double down = (int)pos;
+      double up = (int)pos+1; 
+      boolean match = (pos == down);
+      if (match)
+      {
+         mTransport.playStartPosition().inc(num);
+         getHost().println("match must be true");
+      }
+      else if (num == -1)
+      {
+         getHost().println("match must be false");
+         mTransport.playStartPosition().set(down);
+      }
+      else
+      {
+         mTransport.playStartPosition().set(up);
+      };
+     
+    }  
 
 
      ////////////////////////
@@ -500,12 +498,8 @@ public class AtomSQExtension extends ControllerExtension
       createSongLayer();
       createEditLayer();
       createUserLayer();
-
       createInst2Layer();
       createShiftLayer();
-
-      //could add the mark-intereted here, but they do nto work on this type for some reason
-      //mSongLayer.isActive().markInterested();
 
       // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
    }
@@ -526,19 +520,9 @@ public class AtomSQExtension extends ControllerExtension
       mBaseLayer.bindReleased(mShiftButton, mShiftLayer.getDeactivateAction());
 
       //Master Buttons
-      //Encoder 9 could adjust any button value that has a range of adjustments. Currently they are all toggles.
-     // mBaseLayer.bind(mEncoders[8], () ->{changePlayPosition(1);} );
-     // mBaseLayer.bind(mEncoders[8], ()  -> {mTransport.playStartPosition().inc(1.0);} );
      final HardwareActionBindable inc = getHost().createAction(() ->  changePlayPosition(1.0),  () -> "+");;
       final HardwareActionBindable dec = getHost().createAction(() -> changePlayPosition(-1.0),  () -> "-");
       mBaseLayer.bind(mEncoders[8], getHost().createRelativeHardwareControlStepTarget(inc, dec));
-    // mBaseLayer.bind(mEncoders[8], changePlayPosition().inc(), changePlayPosition().dec());
-
-
-    // mBaseLayer.bind(mEncoders[8],() ->{mTransport.playStartPosition().inc(-1.0);}, () -> {mTransport.playStartPosition().inc(1.0);});
-
-     //this returns a beattimevalue, which cannot convert to anything in Layer script.
-     //mBaseLayer.bind(mEncoders[8], mTransport.playPosition() );
 
       //left and right shift function for undo/redo
       mBaseLayer.bindPressed(mBackButton, () -> {
@@ -565,14 +549,6 @@ public class AtomSQExtension extends ControllerExtension
          }
 
       });
-
-   //    mBaseLayer.bind(mEncoders[8], () ->{
-   //       if (mShift) {
-   //       mMasterTrack.volume();
-   //       }
-   // });
-
-
    
       //Menu Buttons
       mBaseLayer.bindPressed(mSongButton, () -> {
@@ -694,56 +670,11 @@ public class AtomSQExtension extends ControllerExtension
 
    private void createInst2Layer()
    {
-      //getHost().println("InstLayer active");
-      //initialize the bindings for this layer
-      //getHost().println("Inst");
-
-      //mInst2Layer.bindToggle(m1Button, mCursorTrack.solo() ); //source
-      //mInst2Layer.bindToggle(m2Button, mCursorTrack.mute()); //dest
-      
-      // mInst2Layer.bindPressed(m3Button,() -> {
-      //    String mon = mCursorTrack.monitorMode().get();
-      //    getHost().println(mon);
-      //    // String next;
-      //    // String modes[] = {"ON", "OFF", "AUTO"};
-      //    // mCursorTrack.monitorMode().set(() -> {
-      //    //    switch (mon) {
-      //    //       case "ON":
-      //    //       return "OFF";
-      //    //       case "OFF":
-      //    //       return "AUTO";
-      //    //       case "AUTO":
-      //    //       return "ON";
-      //    //       // default:
-      //    //       //    break;
-      //    //    };
-      //    // });
-      //    //keep
-         
-  
-      //    }); //Monitor mode
+      //Monitor mode
       mInst2Layer.bindToggle(m4Button, mCursorDevice.isExpanded(), mCursorDevice.isExpanded()); //expand
       mInst2Layer.bindToggle(m5Button, mCursorDevice.isRemoteControlsSectionVisible(), mCursorDevice.isRemoteControlsSectionVisible()); //controls
       mInst2Layer.bindToggle(m3Button, mCursorTrack.isActivated());
       //mInst2Layer.bindToggle(m5Button, mCursorDevice.isMacroSectionVisible()); //macro is wrong, want modulation, cannot find rn.
-     
-      //mInst2Layer.bind(mEncoders[8], mCursorTrack.monitorMode().set());
-/*    for the source, dest, mon mode
-      each button should specify focus for Enc 9
-         lights up in focus
-         assigns Enc9 to function
-      Enc9 should change the setting. 
-         updates the setting on the display
-            need array of possible options
-            actual state name needs to be fed into sysex, updated in flush
-
-         changes in BW
-
-
-      
-      
-      */
-
    }
   
    private void createSongLayer()
@@ -792,25 +723,7 @@ public class AtomSQExtension extends ControllerExtension
       mEditLayer.bind (mEncoders[8], mCursorTrack.volume());
       //this works as an example for adjusting the play start. save.
       mEditLayer.bindPressed(m4Button, () -> {mTransport.playStartPosition().inc(1.0);});
-      //initialize the bindings for this layer
-      //Display buttons
-      //mSongLayer.bindToggle (m1Button, mCursorDevice.isEnabled());
-      //mSongLayer.bindToggle(m2Button, mCursorDevice.isWindowOpen());
-      // mSongLayer.bindToggle(m3Button, mCursorTrack.arm());
-      // mSongLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
-      // mSongLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
-      // mSongLayer.bindToggle(m6Button, mCursorTrack.isActivated());
-        
-      // //Encoders
-      // for (int i = 0; i < 8; i++)
-      // {
-      //    final Parameter parameter = mRemoteControls.getParameter(i);
-      //    final RelativeHardwareKnob encoder = mEncoders[i];
 
-      //    mBaseLayer.bind(encoder, parameter);
-      // }
-
-  
    }
 
    private void createUserLayer()
@@ -854,17 +767,6 @@ public class AtomSQExtension extends ControllerExtension
          mMidiOut.sendSysex(sysex3);
 
    }
-
-   // public void updateSends ()
-   // {
-   //    if (mSendBank.exists().get())
-   //    {
-   //    int sends = mSendBank.getSizeOfBank();
-   //    String sendsString = Integer.toString(sends);
-   //    getHost().println(sendsString);
-   //    }
-   // }
-
 
    private void InstMode ()
    {
