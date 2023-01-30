@@ -49,6 +49,8 @@ import com.bitwig.extension.controller.api.Send;
 import com.bitwig.extension.controller.api.SendBank;
 import com.bitwig.extension.controller.api.MasterTrack;
 import com.bitwig.extension.controller.api.HardwareActionBindable;
+//to access device layer for duplicating objects
+import com.bitwig.extension.controller.api.CursorDeviceLayer;
 
 //these are not in the regular APIs...they come from the Bitwig repo though. 
 import com.bitwig.extensions.framework.BooleanObject;
@@ -129,7 +131,7 @@ public class AtomSQExtension extends ControllerExtension
  final SysexHandler sH = new SysexHandler();
  public static final SysexBuilder sB = new SysexBuilder();
 
- 
+private CursorDeviceLayer  mCDL; 
 
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
    {
@@ -184,8 +186,13 @@ public class AtomSQExtension extends ControllerExtension
       mCursorDevice.isRemoteControlsSectionVisible().markInterested();
       //mCursorDevice.isMacroSectionVisible().markInterested();
       mCursorDevice.isExpanded ().markInterested ();
+      // mCursorDevice.nextAction().markInterested();
+      // mCursorDevice.previousAction().markInterested();
       //create RCs for encoders
      
+      mCDL = mCursorDevice.createCursorLayer();
+
+
       mRemoteControls = mCursorDevice.createCursorRemoteControlsPage("CursorPage1", 8, "");
       mRemoteControls.setHardwareLayout(HardwareControlType.ENCODER, 8);
       //remoted RC set indication from here, as it was otherwise always indicated, even out of focus in Mix mode
@@ -491,6 +498,7 @@ public class AtomSQExtension extends ControllerExtension
       mEditLayer = createLayer ("Edit");
       mUserLayer = createLayer("User");
       mInst2Layer = createLayer ("Inst2");
+      mInst3Layer = createLayer ("Inst3");
       mShiftLayer = createLayer ("Shift");
 
       createBaseLayer();
@@ -500,6 +508,7 @@ public class AtomSQExtension extends ControllerExtension
       createUserLayer();
       createInst2Layer();
       createShiftLayer();
+      createInst3Layer();
 
       // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
    }
@@ -535,6 +544,11 @@ public class AtomSQExtension extends ControllerExtension
             mInstLayer.activate();
             InstMode();
          }
+         else if (mInst3Layer.isActive()) {
+            mInst3Layer.deactivate();
+            mInst2Layer.activate();
+            InstMode();
+         }
       });
          
       mBaseLayer.bindPressed(mForwardButton, () -> {
@@ -546,6 +560,12 @@ public class AtomSQExtension extends ControllerExtension
             mInstLayer.deactivate();
             mInst2Layer.activate();
             Inst2Mode();
+         }
+         else if (mInst2Layer.isActive())
+         {
+            mInst2Layer.deactivate();
+            mInst3Layer.activate();
+            Inst3Mode();
          }
 
       });
@@ -616,8 +636,25 @@ public class AtomSQExtension extends ControllerExtension
       //Nav buttons
       mBaseLayer.bindToggle(mUpButton, mCursorTrack.selectPreviousAction(), mCursorTrack.hasPrevious());
       mBaseLayer.bindToggle(mDownButton, mCursorTrack.selectNextAction(), mCursorTrack.hasNext());
-      mBaseLayer.bindToggle(mLeftButton, mCursorDevice.selectPreviousAction(), mCursorDevice.hasPrevious());
+      mBaseLayer.bindPressed(mUpButton, () -> {mApplication.focusPanelAbove();});
+      mBaseLayer.bindPressed(mDownButton, () -> {mApplication.focusPanelAbove();});
+      mBaseLayer.bindToggle(mLeftButton, mCursorDevice.selectPreviousAction(),mCursorDevice.hasPrevious());
       mBaseLayer.bindToggle(mRightButton, mCursorDevice.selectNextAction(), mCursorDevice.hasNext());
+      mBaseLayer.bindPressed(mLeftButton, () -> {mApplication.focusPanelBelow();});
+      mBaseLayer.bindPressed(mRightButton, () -> {mApplication.focusPanelBelow();});
+
+      //mBaseLayer.bindPressed(mLeftButton, () -> {mApplication.focusPanelBelow(); mCursorDevice.selectPrevious();});
+      //mBaseLayer.bindPressed(mRightButton, () -> {mApplication.focusPanelBelow(); mCursorDevice.selectNext(); });
+
+
+      // mBaseLayer.bindPressed(mLeftButton, () -> {
+      //    mApplication.focusPanelBelow();
+      //    mCursorDevice.selectPreviousAction();
+      // }, mCursorDevice.hasPrevious());
+      // mBaseLayer.bindPressed(mRightButton,  () -> {
+      //     mApplication.focusPanelBelow();
+      //    mCursorDevice.selectNextAction();
+      // }, mCursorDevice.hasNext());
 
    }
 
@@ -675,6 +712,18 @@ public class AtomSQExtension extends ControllerExtension
       mInst2Layer.bindToggle(m5Button, mCursorDevice.isRemoteControlsSectionVisible(), mCursorDevice.isRemoteControlsSectionVisible()); //controls
       mInst2Layer.bindToggle(m3Button, mCursorTrack.isActivated());
       //mInst2Layer.bindToggle(m5Button, mCursorDevice.isMacroSectionVisible()); //macro is wrong, want modulation, cannot find rn.
+   }
+
+   private void createInst3Layer()
+   {
+      //Monitor mode
+      //mInst3Layer.bindToggle(m4Button, mCursorDevice.isExpanded(), mCursorDevice.isExpanded()); //expand
+      //mInst3Layer.bindToggle(m5Button, mCursorDevice.isRemoteControlsSectionVisible(), mCursorDevice.isRemoteControlsSectionVisible()); //controls
+      //app duplicate works on the selected item, which is always the track at the moment. If you manually click into the devices, then it deletes a device.
+      mInst3Layer.bindPressed(m2Button, () -> {mApplication.focusPanelAbove(); mApplication.duplicate();});
+      mInst3Layer.bindPressed(m3Button, () -> {mCursorTrack.deleteObject();});
+      mInst3Layer.bindPressed(m5Button, () -> {mApplication.focusPanelBelow(); mApplication.duplicate();});
+      mInst3Layer.bindPressed(m6Button, () -> {mCursorDevice.deleteObject();});
    }
   
    private void createSongLayer()
@@ -813,7 +862,7 @@ public class AtomSQExtension extends ControllerExtension
    {
       //getHost().println("InstMode");
       //getHost().showPopupNotification("Instrument Mode");
-      mApplication.setPanelLayout("ARRANGE");
+      //mApplication.setPanelLayout("ARRANGE");
       //activate layer, deactivate others (for encoders)
      // mInstLayer.activate();
       //configure display
@@ -826,6 +875,33 @@ public class AtomSQExtension extends ControllerExtension
       String[] mTitles= {"", "", "Active", "Expand", "Controls", ""};
       //Track: source, monitor, group?, group expand, destination
       //Device: presets? chain, createDeviceBrowser, isExpanded, isMacroSelectionVisible, isRemoteControlsSectionVisible()
+      
+      for (int i = 0; i < 3; i++) 
+      {
+         final String msg = mTitles[i];
+         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         mMidiOut.sendSysex(sysex);
+      }
+      for (int i = 3; i < 6; i++) 
+      {
+         final String msg = mTitles[i];
+         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         mMidiOut.sendSysex(sysex);
+      }
+
+      // Encoder 9...must recenter it? 00 and 127 have no other visible effect.
+      mMidiOut.sendMidi(176, 29, 00);
+      mMidiOut.sendSysex("F0000106221301F7");
+   }
+
+   private void Inst3Mode ()
+   {
+      //mApplication.setPanelLayout("ARRANGE");
+      mMidiOut.sendSysex("F0000106221300F7");
+      mMidiOut.sendSysex("F0000106221400F7");
+     
+      //button titles
+      String[] mTitles= {"1", "Duplicate", "Delete", "4", "Duplicate", "Delete"};
       
       for (int i = 0; i < 3; i++) 
       {
@@ -984,6 +1060,7 @@ public class AtomSQExtension extends ControllerExtension
    private SendBank mSendBank;
    public int sends;
 
+
   public static CursorTrack mCursorTrack;
 
   //changed from pinnable cursor device
@@ -1028,8 +1105,7 @@ private Application mApplication;
      }
   };
 
-private Layer mBaseLayer, mInstLayer, mSongLayer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer;
+private Layer mBaseLayer, mInstLayer, mSongLayer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer;
 
-//sdfgsdfgsdfgsdfgsdfgsdfgsfdg
 
 }
