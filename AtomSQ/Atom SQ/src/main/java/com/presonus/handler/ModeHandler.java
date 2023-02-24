@@ -5,6 +5,7 @@ import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import com.bitwig.extension.controller.api.Transport;
 import com.bitwig.extension.controller.api.Application;
+import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.CursorDevice;
 import com.bitwig.extension.controller.api.CursorTrack;
 import com.bitwig.extension.controller.api.CursorDevice;
@@ -41,6 +42,7 @@ public class ModeHandler
 //    application.setPanelLayout("ARRANGE");
 
 //    this.application.panelLayout().markInterested();
+
 
     public boolean handleMidi (ShortMidiMessage msg)
     {
@@ -196,6 +198,7 @@ public void CursorHandler (final CursorDevice cursorDevice, final CursorTrack cu
         // CursorTrack cursorTrack;
        // println ("ModeHandler: track state")
             hardware.updateLED(AtomSQHardware.ASQ_BTN_1, cursorTrack.solo().get());
+           
            // println ("- solo = " + cursorTrack.solo().get());
             hardware.updateLED(AtomSQHardware.ASQ_BTN_2, cursorTrack.mute().get());
            // println ("- Mute = " + cursorTrack.mute().get());
