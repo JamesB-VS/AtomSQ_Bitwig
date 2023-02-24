@@ -1,10 +1,16 @@
 package com.presonus.handler;
 
 import com.presonus.AtomSQHardware;
+<<<<<<< HEAD
 import com.bitwig.extension.controller.api.ControllerHost;
+=======
+import com.presonus.handler.CursorHandler;
+import com.bitwig.extension.api.Host;
+>>>>>>> e5cc6de835688c029c636c6bca7d53707c545766
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import com.bitwig.extension.controller.api.Transport;
 import com.bitwig.extension.controller.api.Application;
+import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.CursorDevice;
 import com.bitwig.extension.controller.api.CursorTrack;
 import com.bitwig.extension.controller.api.CursorDevice;
@@ -15,6 +21,7 @@ import com.bitwig.extension.controller.api.TrackBank;
 
 public class ModeHandler 
 {
+<<<<<<< HEAD
     public ModeHandler (ControllerHost host)
     {
         
@@ -37,10 +44,17 @@ public class ModeHandler
     private CursorDevice cursorDevice;
     private AtomSQHardware hardware;
     private CursorRemoteControlsPage remoteControlsBank;
+=======
+    ControllerHost host;
+    CursorTrack cursorTrack;
+    CursorDevice cursorDevice;
+   static AtomSQHardware hardware;
+>>>>>>> e5cc6de835688c029c636c6bca7d53707c545766
 //     this.application = application;
 //    application.setPanelLayout("ARRANGE");
 
 //    this.application.panelLayout().markInterested();
+
 
     public boolean handleMidi (ShortMidiMessage msg)
     {
@@ -52,6 +66,7 @@ public class ModeHandler
     //    return true;
     // else 
     //     return false;
+<<<<<<< HEAD
     if (msg.isControlChange() && msg.getData2() == 127)
     {
         switch (msg.getData1())
@@ -84,6 +99,48 @@ public class ModeHandler
                  //application.setPanelLayout("ARRANGE");
                  return true;
 
+=======
+        if (msg.isControlChange() && msg.getData2() == 127)
+        {
+            switch (msg.getData1())
+            {
+                
+                case AtomSQHardware.ASQ_SONG:
+                    //  modeHandler.Song();
+                    //  menumode = ASQ_SONG;
+                    //  encodermode = ASQ_SONG;
+                    //  application.setPanelLayout("MIX");
+                    //  modeHandler.displayButtonLightsOn();
+                    this.updateLED();
+                    return true;
+                case AtomSQHardware.ASQ_INST:
+                    //  modeHandler.Inst();
+                    //  menumode = ASQ_INST;
+                    //  application.setPanelLayout("ARRANGE");
+                    return true;
+                case AtomSQHardware.ASQ_EDIT:
+                    //  println ("the Editor button has been disabled in this build.")
+                    //FIX editmode. disabling as the settings are too much for this round. 
+                    // modeHandler.Edit();
+                    // menumode = ASQ_EDIT;
+                    // application.setPanelLayout("EDIT")
+                    return true;
+                case AtomSQHardware.ASQ_USER:
+                    //  modeHandler.User();
+                    //  menumode = ASQ_USER;
+                    //as this menu now hosts the keyboard controls, it is probably not necessary to force Arranger mode.
+                    //application.setPanelLayout("ARRANGE");
+                    return true;
+
+                    default:
+                        // host.errorln ("Command " + data1 + " is not supported");
+                        return false;
+            }
+        }
+         else 
+            return false;
+}
+>>>>>>> e5cc6de835688c029c636c6bca7d53707c545766
             //   case AtomSQHardware.ASQ_BTN_1:
             //      modeHandler.displayButtons(menumode, ASQ_BTN_1);
             //      return true;
@@ -156,6 +213,7 @@ public class ModeHandler
             //         return true;
             //      }   
            
+<<<<<<< HEAD
               default:
                 // host.errorln ("Command " + data1 + " is not supported");
                  return false;
@@ -194,8 +252,20 @@ public void CursorHandler (final CursorDevice cursorDevice, final CursorTrack cu
     {
         // CursorDevice cursorDevice;
         // CursorTrack cursorTrack;
+=======
+            // 
+
+
+
+
+        
+public void updateLED ()
+    {
+        //ControllerHost host;
+>>>>>>> e5cc6de835688c029c636c6bca7d53707c545766
        // println ("ModeHandler: track state")
             hardware.updateLED(AtomSQHardware.ASQ_BTN_1, cursorTrack.solo().get());
+           
            // println ("- solo = " + cursorTrack.solo().get());
             hardware.updateLED(AtomSQHardware.ASQ_BTN_2, cursorTrack.mute().get());
            // println ("- Mute = " + cursorTrack.mute().get());

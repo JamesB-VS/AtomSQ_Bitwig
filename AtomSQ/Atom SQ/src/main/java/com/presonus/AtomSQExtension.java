@@ -52,6 +52,7 @@ import com.bitwig.extension.api.util.midi.SysexBuilder;
 import com.bitwig.extension.controller.api.SendBank;
 import com.bitwig.extension.controller.api.Track;
 import com.bitwig.extension.controller.api.TrackBank;
+<<<<<<< HEAD
 import com.bitwig.extension.controller.api.MasterTrack;
 import com.bitwig.extension.controller.api.HardwareActionBindable;
 //to access device layer for duplicating objects
@@ -66,11 +67,18 @@ import com.bitwig.extensions.framework.Layers;
 //import com.bitwig.extensions.util.NoteInputUtils;
 
 import com.presonus.handler.SysexHandler;
+=======
+
+import com.presonus.handler.TransportHandler;
+import com.presonus.handler.CursorHandler;
+import com.presonus.handler.ModeHandler;
+>>>>>>> e5cc6de835688c029c636c6bca7d53707c545766
 
 
 public class AtomSQExtension extends ControllerExtension
 {
 
+<<<<<<< HEAD
    //Variables from Hardware
    // Transport
    private final static int  CC_PLAY      = 109;
@@ -135,6 +143,13 @@ public class AtomSQExtension extends ControllerExtension
    private static final Color ORANGE = Color.fromRGB(1, 1, 0);
    private static final Color BLUE = Color.fromRGB(0, 0, 1);
 
+=======
+   private TransportHandler transportHandler;
+   private AtomSQHardware hardware;
+   private ModeHandler modeHandler;
+   private CursorHandler cursorHandler;
+  // private ShiftHandler shiftHandler;
+>>>>>>> e5cc6de835688c029c636c6bca7d53707c545766
 
  final SysexHandler sH = new SysexHandler();
  public static final SysexBuilder sB = new SysexBuilder();
@@ -164,6 +179,7 @@ private TrackBank mTrackBank;
       mApplication.canRedo().markInterested();
       mApplication.canUndo().markInterested();
 
+<<<<<<< HEAD
       final MidiIn midiIn = host.getMidiInPort(0);
       midiIn.setMidiCallback((ShortMidiMessageReceivedCallback)msg -> onMidi0(msg));
       mNoteInput = midiIn.createNoteInput (DEV_NAME, NOTE_ON, NOTE_OFF, NOTE_MOD, NOTE_BEND, NOTE_PRES);
@@ -215,6 +231,17 @@ private TrackBank mTrackBank;
       mCDLDBnk = mCDL.createDeviceBank(3); */
 
       mCDLDBnk = mCursorTrack.createDeviceBank(3);
+=======
+      //without declaring this here, the handle Midi below fails as soon as a call gets tot he modeHandler, as it is declared as Null. 
+      this.modeHandler = new ModeHandler();
+
+      final CursorTrack cursorTrack = host.createCursorTrack(2, 0);
+      final CursorDevice cursorDevice = cursorTrack.createCursorDevice("Current", "Current", 8,  CursorDeviceFollowMode.FOLLOW_SELECTION);
+      final CursorRemoteControlsPage remoteControlsBank = cursorDevice.createCursorRemoteControlsPage("CursorPage1", 8, "");
+
+      this.cursorHandler = new CursorHandler (cursorDevice, cursorTrack, remoteControlsBank);
+   
+>>>>>>> e5cc6de835688c029c636c6bca7d53707c545766
       
       mCDLDBnk.canScrollBackwards().markInterested();
       mCDLDBnk.canScrollForwards().markInterested();
@@ -1092,6 +1119,7 @@ public void moveDeviceRight() {
       mMidiOut.sendSysex("F0000106221301F7");
    }
 
+<<<<<<< HEAD
    private void Inst3Mode ()
    {
       //mApplication.setPanelLayout("ARRANGE");
@@ -1100,6 +1128,10 @@ public void moveDeviceRight() {
      
       //button titles
       String[] mTitles= {"Move", "Duplicate", "Delete", "Move", "Duplicate", "Delete"};
+=======
+      if (this.modeHandler.handleMidi (msg))
+      return;
+>>>>>>> e5cc6de835688c029c636c6bca7d53707c545766
       
       for (int i = 0; i < 3; i++) 
       {

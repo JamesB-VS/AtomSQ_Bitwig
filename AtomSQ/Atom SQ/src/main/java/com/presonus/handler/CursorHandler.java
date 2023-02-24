@@ -12,20 +12,20 @@ import com.bitwig.extension.controller.api.TrackBank;
 public class CursorHandler
 {
 
-    private CursorTrack cursorTrack;
-    private CursorDevice cursorDevice;
-    private CursorRemoteControlsPage remoteControlsBank;
+    CursorTrack cursorTrack;
+    CursorDevice cursorDevice;
+    CursorRemoteControlsPage remoteControlsBank;
 
-    public CursorHandler (final CursorDevice cursorDevice, final CursorTrack cursorTrack, final CursorRemoteControlsPage remoteControlsBank)
+    public CursorHandler (CursorDevice cursorDevice, CursorTrack cursorTrack, CursorRemoteControlsPage remoteControlsBank)
     {
         this.cursorTrack = cursorTrack;
         this.cursorDevice = cursorDevice;
         this.remoteControlsBank = remoteControlsBank;
 
     // var followMode = CursorDeviceFollowMode.FOLLOW_SELECTION;
-    // cursorTrack = host.createCursorTrack(2, 0);
+    //cursorTrack = host.createCursorTrack(2, 0);
     // cursorDevice = cursorTrack.createCursorDevice("Current", "Current", 8, followMode);
-    // remoteControlsBank = cursorDevice.createCursorRemoteControlsPage("CursorPage1", 8, "");
+   // remoteControlsBank = cursorDevice.createCursorRemoteControlsPage("CursorPage1", 8, "");
 
     this.cursorDevice.isEnabled ().markInterested ();
     this.cursorDevice.isWindowOpen ().markInterested ();
