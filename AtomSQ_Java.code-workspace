@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../../Users/Nova/Documents/Bitwig Studio/Controller Scripts/PreSonus/Atom SQ 2/LiveMode"
+		},
+		{
+			"path": "../bitwig-extensions"
 		}
 	],
 	"settings": {
