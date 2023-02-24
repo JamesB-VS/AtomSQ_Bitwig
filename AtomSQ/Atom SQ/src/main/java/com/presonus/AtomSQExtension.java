@@ -1,15 +1,18 @@
 package com.presonus;
 
 //frop ATOM
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.lang.Math;
+// import java.util.function.Consumer;
+// import java.util.function.Supplier;
+// import java.lang.Math;
 //from Hardware
 //import java.util.Arrays;
 
-import javax.net.ssl.HostnameVerifier;
+// import javax.net.ssl.HostnameVerifier;
 
 import com.bitwig.extension.controller.api.CursorDevice;
+
+import java.nio.channels.SelectableChannel;
+
 //FromATOM
 import com.bitwig.extension.api.Color;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
@@ -17,15 +20,15 @@ import com.bitwig.extension.callback.ShortMidiMessageReceivedCallback;
 import com.bitwig.extension.controller.ControllerExtension;
 import com.bitwig.extension.controller.api.Action;
 import com.bitwig.extension.controller.api.Application;
-import com.bitwig.extension.controller.api.Arpeggiator;
-import com.bitwig.extension.controller.api.Clip;
-import com.bitwig.extension.controller.api.ClipLauncherSlot;
+// import com.bitwig.extension.controller.api.Arpeggiator;
+// import com.bitwig.extension.controller.api.Clip;
+// import com.bitwig.extension.controller.api.ClipLauncherSlot;
 import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.CursorDeviceFollowMode;
 import com.bitwig.extension.controller.api.CursorRemoteControlsPage;
 import com.bitwig.extension.controller.api.CursorTrack;
-import com.bitwig.extension.controller.api.DrumPad;
-import com.bitwig.extension.controller.api.DrumPadBank;
+//import com.bitwig.extension.controller.api.DrumPad;
+//import com.bitwig.extension.controller.api.DrumPadBank;
 import com.bitwig.extension.controller.api.HardwareButton;
 import com.bitwig.extension.controller.api.HardwareControlType;
 import com.bitwig.extension.controller.api.HardwareLightVisualState;
@@ -33,30 +36,34 @@ import com.bitwig.extension.controller.api.HardwareSurface;
 import com.bitwig.extension.controller.api.MidiExpressions;
 import com.bitwig.extension.controller.api.MidiIn;
 import com.bitwig.extension.controller.api.MidiOut;
-import com.bitwig.extension.controller.api.MultiStateHardwareLight;
+//import com.bitwig.extension.controller.api.MultiStateHardwareLight;
 import com.bitwig.extension.controller.api.NoteInput;
-import com.bitwig.extension.controller.api.NoteStep;
+//import com.bitwig.extension.controller.api.NoteStep;
 import com.bitwig.extension.controller.api.OnOffHardwareLight;
 import com.bitwig.extension.controller.api.Parameter;
-import com.bitwig.extension.controller.api.PinnableCursorDevice;
-import com.bitwig.extension.controller.api.PlayingNote;
+//import com.bitwig.extension.controller.api.PinnableCursorDevice;
+//import com.bitwig.extension.controller.api.PlayingNote;
 import com.bitwig.extension.controller.api.RelativeHardwareKnob;
-import com.bitwig.extension.controller.api.Scene;
-import com.bitwig.extension.controller.api.SceneBank;
+//import com.bitwig.extension.controller.api.Scene;
+//import com.bitwig.extension.controller.api.SceneBank;
 import com.bitwig.extension.controller.api.Transport;
 import com.bitwig.extension.api.util.midi.SysexBuilder;
-import com.bitwig.extension.controller.api.Send;
+//import com.bitwig.extension.controller.api.Send;
 import com.bitwig.extension.controller.api.SendBank;
+import com.bitwig.extension.controller.api.Track;
+import com.bitwig.extension.controller.api.TrackBank;
 import com.bitwig.extension.controller.api.MasterTrack;
 import com.bitwig.extension.controller.api.HardwareActionBindable;
 //to access device layer for duplicating objects
 import com.bitwig.extension.controller.api.CursorDeviceLayer;
-
+import com.bitwig.extension.controller.api.DeviceBank;
+import com.bitwig.extension.controller.api.Device;
 //these are not in the regular APIs...they come from the Bitwig repo though. 
-import com.bitwig.extensions.framework.BooleanObject;
+
+//import com.bitwig.extensions.framework.BooleanObject;
 import com.bitwig.extensions.framework.Layer;
 import com.bitwig.extensions.framework.Layers;
-import com.bitwig.extensions.util.NoteInputUtils;
+//import com.bitwig.extensions.util.NoteInputUtils;
 
 import com.presonus.handler.SysexHandler;
 
@@ -108,15 +115,16 @@ public class AtomSQExtension extends ControllerExtension
    private final static String  NOTE_MOD      = "b001??";
    private final static String  NOTE_BEND     = "e0????";
    private final static int  CC_ENCODER_1     = 14;
-   private final static int  CC_ENCODER_2     = 15;
-   private final static int  CC_ENCODER_3     = 16;
-   private final static int  CC_ENCODER_4     = 17;
-   private final static int  CC_ENCODER_5     = 18;
-   private final static int  CC_ENCODER_6     = 19;
-   private final static int  CC_ENCODER_7     = 20;
-   private final static int  CC_ENCODER_8     = 21;
-   private final static int[]  ENCODERS = {14,15,16,17,18,19,29,21};
-   private final static int[] BUTTONARRAY = {36, 37, 38, 39, 40, 41};
+   //these may not be needed because the encoders are created in an iteration below. 
+   // private final static int  CC_ENCODER_2     = 15;
+   // private final static int  CC_ENCODER_3     = 16;
+   // private final static int  CC_ENCODER_4     = 17;
+   // private final static int  CC_ENCODER_5     = 18;
+   // private final static int  CC_ENCODER_6     = 19;
+   // private final static int  CC_ENCODER_7     = 20;
+   // private final static int  CC_ENCODER_8     = 21;
+   // private final static int[]  ENCODERS = {14,15,16,17,18,19,29,21};
+   // private final static int[] BUTTONARRAY = {36, 37, 38, 39, 40, 41};
 
    //ATOM colors
    private static final Color WHITE = Color.fromRGB(1, 1, 1);
@@ -130,8 +138,11 @@ public class AtomSQExtension extends ControllerExtension
 
  final SysexHandler sH = new SysexHandler();
  public static final SysexBuilder sB = new SysexBuilder();
-
+private  CursorDevice mCursorDevice;
+private  CursorTrack mCursorTrack;
 private CursorDeviceLayer  mCDL; 
+private DeviceBank mCDLDBnk;
+private TrackBank mTrackBank;
 
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
    {
@@ -141,6 +152,11 @@ private CursorDeviceLayer  mCDL;
    @Override
    public void init()
    {
+
+       //public static CursorTrack mCursorTrack;
+
+  //changed from pinnable cursor device
+
       final ControllerHost host = getHost();
       //added final here in testing for method in sysexhandler...might break something.
       mApplication = host.createApplication();
@@ -188,10 +204,48 @@ private CursorDeviceLayer  mCDL;
       mCursorDevice.isExpanded ().markInterested ();
       // mCursorDevice.nextAction().markInterested();
       // mCursorDevice.previousAction().markInterested();
+      mCursorDevice.position().markInterested();
       //create RCs for encoders
-     
+
+      //TODO clean this up after documenting. the layers were the problem, not necessary. variables needs renaming.
+     /* commenting this out, as other scripts skip the layer bits. worth trying
       mCDL = mCursorDevice.createCursorLayer();
 
+      //a device bank of 3, to allow for scrolling, which should work to select a device when deleting one.
+      mCDLDBnk = mCDL.createDeviceBank(3); */
+
+      mCDLDBnk = mCursorTrack.createDeviceBank(3);
+      
+      mCDLDBnk.canScrollBackwards().markInterested();
+      mCDLDBnk.canScrollForwards().markInterested();
+      mCDLDBnk.scrollPosition().markInterested();
+      mCDLDBnk.itemCount().markInterested();
+
+      for (int i = 0; i < mCDLDBnk.getSizeOfBank(); i++) {
+         final Device device = mCDLDBnk.getDevice(i);
+         device.deviceType().markInterested();
+         device.name().markInterested();
+         device.position().markInterested();
+      }
+
+
+     // mTrackBank = mCursorTrack.createTrackBank(3,0,0,false);
+      mTrackBank = host.createTrackBank(1,0,0,true);
+      mTrackBank.followCursorTrack(mCursorTrack);
+      mTrackBank.canScrollBackwards().markInterested();
+      mTrackBank.canScrollForwards().markInterested();
+      mTrackBank.itemCount().markInterested();
+      mTrackBank.scrollPosition().markInterested();
+      mTrackBank.cursorIndex().markInterested();
+  
+
+  for (int i = 0; i < mTrackBank.getSizeOfBank(); i++) {
+         final Track track = mTrackBank.getItemAt(i);
+         track.trackType().markInterested();
+         track.name().markInterested();
+         track.position().markInterested();
+         track.isGroup().markInterested();
+      }
 
       mRemoteControls = mCursorDevice.createCursorRemoteControlsPage("CursorPage1", 8, "");
       mRemoteControls.setHardwareLayout(HardwareControlType.ENCODER, 8);
@@ -260,6 +314,7 @@ private CursorDeviceLayer  mCDL;
 
       //Modes
       InstMode();
+      mCursorTrack.selectFirst();
    
       //Notifications      
       host.showPopupNotification("Atom SQ Initialized");
@@ -483,6 +538,106 @@ private CursorDeviceLayer  mCDL;
      
     }  
 
+//     private void moveDevice(Double value)
+//  {
+//    getHost().println("move  Device activated");
+   
+//  Device previousDevice = mCDLDBnk.getDevice(0);
+//    String pdn = previousDevice.name().get();
+//    getHost().println(pdn);
+// Device nextDevice = mCDLDBnk.getDevice(2);
+//    String ndn = nextDevice.name().get();
+//    getHost().println(ndn);
+//    if (value == 1.0)
+//    {
+//       getHost().println("right");
+//       nextDevice.afterDeviceInsertionPoint().moveDevices(mCursorDevice);
+//       mCursorDevice.selectPrevious();
+//       mCursorDevice.selectNext();
+//    }
+//    else if (value == -1.0)
+//    {
+//       getHost().println("left");
+//       previousDevice.beforeDeviceInsertionPoint().moveDevices(mCursorDevice);
+//       mCursorDevice.selectPrevious();
+//       mCursorDevice.selectNext();
+
+//    }
+
+//  }
+
+
+public void moveDeviceLeft() {
+   final Device previousDevice = mCDLDBnk.getDevice(0);
+   String pdn = previousDevice.name().get();
+   getHost().println(pdn);
+   previousDevice.beforeDeviceInsertionPoint().moveDevices(mCursorDevice);
+   mCursorDevice.selectPrevious();
+   mCursorDevice.selectNext();
+}
+public void moveDeviceRight() {
+   final Device nextDevice = mCDLDBnk.getDevice(2);
+   String ndn = nextDevice.name().get();
+   getHost().println(ndn);
+   nextDevice.afterDeviceInsertionPoint().moveDevices(mCursorDevice);
+   mCursorDevice.selectPrevious();
+   mCursorDevice.selectNext();
+}
+
+
+ private void moveTrack(Double value)
+ {
+   getHost().println("move Track activated");
+   
+   final Track track = mTrackBank.getItemAt(0);
+   final Track previousTrack = mTrackBank.getItemAt(0);
+   String pdn = previousTrack.name().get();
+   getHost().println(pdn);
+   final Track nextTrack = mTrackBank.getItemAt(2);
+   String ndn = nextTrack.name().get();
+   getHost().println(ndn);
+   if (value == 1.0)
+   {
+      getHost().println("down");
+      track.afterTrackInsertionPoint().moveTracks(mCursorTrack);
+      mCursorTrack.selectPrevious();
+      mCursorTrack.selectNext();
+   }
+   else if (value == -1.0)
+   {
+      getHost().println("up");
+      track.beforeTrackInsertionPoint().moveTracks(mCursorTrack);
+      mCursorTrack.selectNext();
+      mCursorTrack.selectPrevious();
+
+   }
+}
+
+/*  private void moveTrack(Double value)
+ {
+   getHost().println("move Track activated");
+   Track track = mCursorTrack;
+   int pos = track.position().get();
+   Track prev =  //Stopped here. Need a function maybe, just a way to grab the track, or refocus on the position alone. Would then need to use position to define the track insertion point.;
+  
+   if (value == 1.0)
+   {
+      getHost().println("down");
+      .afterTrackInsertionPoint().moveTracks(mCursorTrack);
+   }
+   else if (value == -1.0)
+   {
+      getHost().println("up");
+      previousTrack.beforeTrackInsertionPoint().moveTracks(mCursorTrack);
+   }
+
+   final Device nextDevice = deviceBank.getDevice(2);
+      nextDevice.afterDeviceInsertionPoint().moveDevices(cursorDevice);
+      cursorDevice.selectPrevious();
+      cursorDevice.selectNext();
+   
+ } */
+
 
      ////////////////////////
     //       Layers       //
@@ -500,6 +655,8 @@ private CursorDeviceLayer  mCDL;
       mInst2Layer = createLayer ("Inst2");
       mInst3Layer = createLayer ("Inst3");
       mShiftLayer = createLayer ("Shift");
+      mDeviceMoveLayer = createLayer("DeviceMove");
+      mTrackMoveLayer = createLayer ("TrackMove");
 
       createBaseLayer();
       createInstLayer();
@@ -509,6 +666,8 @@ private CursorDeviceLayer  mCDL;
       createInst2Layer();
       createShiftLayer();
       createInst3Layer();
+      createDeviceMoveLayer();
+      createTrackMoveLayer();
 
       // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
    }
@@ -528,7 +687,8 @@ private CursorDeviceLayer  mCDL;
       mBaseLayer.bindPressed(mShiftButton, mShiftLayer.getActivateAction());
       mBaseLayer.bindReleased(mShiftButton, mShiftLayer.getDeactivateAction());
 
-      //Master Buttons
+      //Master Controls
+      //Encoder 9
      final HardwareActionBindable inc = getHost().createAction(() ->  changePlayPosition(1.0),  () -> "+");;
       final HardwareActionBindable dec = getHost().createAction(() -> changePlayPosition(-1.0),  () -> "-");
       mBaseLayer.bind(mEncoders[8], getHost().createRelativeHardwareControlStepTarget(inc, dec));
@@ -547,7 +707,7 @@ private CursorDeviceLayer  mCDL;
          else if (mInst3Layer.isActive()) {
             mInst3Layer.deactivate();
             mInst2Layer.activate();
-            InstMode();
+            Inst2Mode();
          }
       });
          
@@ -634,6 +794,7 @@ private CursorDeviceLayer  mCDL;
       }, mTransport.isArrangerRecordEnabled());
 
       //Nav buttons
+      //TODO if there is a way to identify the panels by name, this would be better than above/below
       mBaseLayer.bindToggle(mUpButton, mCursorTrack.selectPreviousAction(), mCursorTrack.hasPrevious());
       mBaseLayer.bindToggle(mDownButton, mCursorTrack.selectNextAction(), mCursorTrack.hasNext());
       mBaseLayer.bindPressed(mUpButton, () -> {mApplication.focusPanelAbove();});
@@ -714,18 +875,54 @@ private CursorDeviceLayer  mCDL;
       //mInst2Layer.bindToggle(m5Button, mCursorDevice.isMacroSectionVisible()); //macro is wrong, want modulation, cannot find rn.
    }
 
+   private void createDeviceMoveLayer()
+   {
+      getHost().println("DeviceMove Layer activated");
+   //Encoder 9
+   final HardwareActionBindable inc = getHost().createAction(() ->  moveDeviceRight(),  () -> "+");;
+   final HardwareActionBindable dec = getHost().createAction(() -> moveDeviceLeft(),  () -> "-");
+   mDeviceMoveLayer.bind(mEncoders[8], getHost().createRelativeHardwareControlStepTarget(inc, dec));
+
+   }
+
+   private void createTrackMoveLayer()
+   {
+      getHost().println("TrackMove Layer activated");
+   //Encoder 9
+   final HardwareActionBindable inc = getHost().createAction(() ->  moveTrack(1.0),  () -> "+");;
+   final HardwareActionBindable dec = getHost().createAction(() -> moveTrack(-1.0),  () -> "-");
+   mTrackMoveLayer.bind(mEncoders[8], getHost().createRelativeHardwareControlStepTarget(inc, dec));
+
+   }
+  
    private void createInst3Layer()
    {
       //Monitor mode
-      //mInst3Layer.bindToggle(m4Button, mCursorDevice.isExpanded(), mCursorDevice.isExpanded()); //expand
-      //mInst3Layer.bindToggle(m5Button, mCursorDevice.isRemoteControlsSectionVisible(), mCursorDevice.isRemoteControlsSectionVisible()); //controls
+      //want to configure the Enc 9 to move either track or device.
+      //TODO change this from toggle to pressed if possible. otherwise both can be on at once, and do not de-toggle unless you leave the menu. Encoder 9
+      mInst3Layer.bindToggle(m4Button, mDeviceMoveLayer);
+      mInst3Layer.bindToggle(m1Button, mTrackMoveLayer);
+      //mInst3Layer.bindToggle(m4Button,); 
       //app duplicate works on the selected item, which is always the track at the moment. If you manually click into the devices, then it deletes a device.
       mInst3Layer.bindPressed(m2Button, () -> {mApplication.focusPanelAbove(); mApplication.duplicate();});
-      mInst3Layer.bindPressed(m3Button, () -> {mCursorTrack.deleteObject();});
+      mInst3Layer.bindPressed(m3Button, () -> {mApplication.focusPanelAbove(); mCursorTrack.deleteObject();});
+      //TODO make a logic statement here that disallows a duplication or deletion if the bottom panel is not selected. pop-up too
       mInst3Layer.bindPressed(m5Button, () -> {mApplication.focusPanelBelow(); mApplication.duplicate();});
-      mInst3Layer.bindPressed(m6Button, () -> {mCursorDevice.deleteObject();});
+      mInst3Layer.bindPressed(m6Button, () -> {
+         final Device previousDevice = mCDLDBnk.getDevice(0);
+         String pdn = previousDevice.name().toString();
+         getHost().println(pdn);
+         //final Device nextDevice = mCDLDBnk.getDevice(2);
+         //mApplication.focusPanelBelow(); 
+         //mCursorDevice.selectInEditor();
+        mCursorDevice.deleteObject();
+         //mApplication.focusPanelAbove();
+        // mApplication.focusPanelBelow(); 
+       // mCDLDBnk.scrollBackwards();
+        //mCursorDevice.selectDevice(previousDevice);
+      });
    }
-  
+
    private void createSongLayer()
    {
       //notifications
@@ -772,7 +969,8 @@ private CursorDeviceLayer  mCDL;
       mEditLayer.bind (mEncoders[8], mCursorTrack.volume());
       //this works as an example for adjusting the play start. save.
       mEditLayer.bindPressed(m4Button, () -> {mTransport.playStartPosition().inc(1.0);});
-
+      mEditLayer.bindPressed(m5Button,() ->{moveDeviceLeft();});
+      mEditLayer.bindPressed(m6Button,() ->{moveDeviceRight();});
    }
 
    private void createUserLayer()
@@ -901,7 +1099,7 @@ private CursorDeviceLayer  mCDL;
       mMidiOut.sendSysex("F0000106221400F7");
      
       //button titles
-      String[] mTitles= {"1", "Duplicate", "Delete", "4", "Duplicate", "Delete"};
+      String[] mTitles= {"Move", "Duplicate", "Delete", "Move", "Duplicate", "Delete"};
       
       for (int i = 0; i < 3; i++) 
       {
@@ -1039,6 +1237,38 @@ private CursorDeviceLayer  mCDL;
       mHardwareSurface.updateHardware();
       updateDisplay();
       //updateSends();
+      //following works to confirm that the Enc9 Layer is active when the toggle button in Inst3 is activated. 
+      // if (mDeviceMoveLayer.isActive())
+      // {
+      //    getHost().println("Enc9 Layer active");
+      // }
+      // //for testing the calling of devices from the device bank. This is not working, and holds up the move and re-orientation after delete functions
+      // for (int i = 0; i < mCDLDBnk.getSizeOfBank(); i++) {
+
+      //    Device device = mCDLDBnk.getDevice(i);
+      // String  devname = device.name().get();
+      // getHost().println("device"+i+" name is "+devname);
+      // }
+
+      if (mTrackMoveLayer.isActive())
+      {
+      for (int i = 0; i < mTrackBank.getSizeOfBank(); i++) {
+
+         Track track = mTrackBank.getItemAt(i);
+      String  trackname = track.name().get();
+      getHost().println("track "+i+" name is "+trackname);
+         //name is not working, so checking if I can get anything else from the trackbank
+      // String  trackx = track.toString();
+      // getHost().println("track "+i+" X is "+trackx);
+      // Boolean  tracky = track.isGroup().get();
+      // getHost().println("track "+i+" is group track is "+tracky);
+      int  trackz = track.position().get();
+      getHost().println("track "+i+" position is "+trackz);
+      }
+
+      }
+  
+
    }
 
    @Override
@@ -1061,10 +1291,12 @@ private CursorDeviceLayer  mCDL;
    public int sends;
 
 
-  public static CursorTrack mCursorTrack;
+   
 
-  //changed from pinnable cursor device
-  private CursorDevice mCursorDevice;
+//   //public static CursorTrack mCursorTrack;
+//   public final CursorTrack mCursorTrack;
+//   //changed from pinnable cursor device
+//   private final CursorDevice mCursorDevice;
 
   private CursorRemoteControlsPage mRemoteControls;
 
@@ -1105,7 +1337,7 @@ private Application mApplication;
      }
   };
 
-private Layer mBaseLayer, mInstLayer, mSongLayer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer;
+private Layer mBaseLayer, mInstLayer, mSongLayer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mDeviceMoveLayer, mTrackMoveLayer;
 
 
 }
