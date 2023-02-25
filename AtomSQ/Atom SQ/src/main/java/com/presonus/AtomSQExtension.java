@@ -190,6 +190,7 @@ private TrackBank mTrackBank;
 
       mCDLDBnk = mCursorTrack.createDeviceBank(3);
       
+      
       mCDLDBnk.canScrollBackwards().markInterested();
       mCDLDBnk.canScrollForwards().markInterested();
       mCDLDBnk.scrollPosition().markInterested();
