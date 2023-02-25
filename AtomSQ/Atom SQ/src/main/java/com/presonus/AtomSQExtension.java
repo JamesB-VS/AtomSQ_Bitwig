@@ -1,34 +1,20 @@
 package com.presonus;
 
-//frop ATOM
-// import java.util.function.Consumer;
-// import java.util.function.Supplier;
-// import java.lang.Math;
-//from Hardware
-//import java.util.Arrays;
 
-// import javax.net.ssl.HostnameVerifier;
 
-import com.bitwig.extension.controller.api.CursorDevice;
 
-import java.nio.channels.SelectableChannel;
 
-//FromATOM
 import com.bitwig.extension.api.Color;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import com.bitwig.extension.callback.ShortMidiMessageReceivedCallback;
 import com.bitwig.extension.controller.ControllerExtension;
 import com.bitwig.extension.controller.api.Action;
 import com.bitwig.extension.controller.api.Application;
-// import com.bitwig.extension.controller.api.Arpeggiator;
-// import com.bitwig.extension.controller.api.Clip;
-// import com.bitwig.extension.controller.api.ClipLauncherSlot;
+import com.bitwig.extension.controller.api.CursorDevice;
 import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.CursorDeviceFollowMode;
 import com.bitwig.extension.controller.api.CursorRemoteControlsPage;
 import com.bitwig.extension.controller.api.CursorTrack;
-//import com.bitwig.extension.controller.api.DrumPad;
-//import com.bitwig.extension.controller.api.DrumPadBank;
 import com.bitwig.extension.controller.api.HardwareButton;
 import com.bitwig.extension.controller.api.HardwareControlType;
 import com.bitwig.extension.controller.api.HardwareLightVisualState;
@@ -36,35 +22,26 @@ import com.bitwig.extension.controller.api.HardwareSurface;
 import com.bitwig.extension.controller.api.MidiExpressions;
 import com.bitwig.extension.controller.api.MidiIn;
 import com.bitwig.extension.controller.api.MidiOut;
-//import com.bitwig.extension.controller.api.MultiStateHardwareLight;
 import com.bitwig.extension.controller.api.NoteInput;
-//import com.bitwig.extension.controller.api.NoteStep;
 import com.bitwig.extension.controller.api.OnOffHardwareLight;
 import com.bitwig.extension.controller.api.Parameter;
-//import com.bitwig.extension.controller.api.PinnableCursorDevice;
-//import com.bitwig.extension.controller.api.PlayingNote;
 import com.bitwig.extension.controller.api.RelativeHardwareKnob;
-//import com.bitwig.extension.controller.api.Scene;
-//import com.bitwig.extension.controller.api.SceneBank;
 import com.bitwig.extension.controller.api.Transport;
 import com.bitwig.extension.api.util.midi.SysexBuilder;
-//import com.bitwig.extension.controller.api.Send;
 import com.bitwig.extension.controller.api.SendBank;
 import com.bitwig.extension.controller.api.Track;
 import com.bitwig.extension.controller.api.TrackBank;
 import com.bitwig.extension.controller.api.MasterTrack;
 import com.bitwig.extension.controller.api.HardwareActionBindable;
-//to access device layer for duplicating objects
 import com.bitwig.extension.controller.api.CursorDeviceLayer;
 import com.bitwig.extension.controller.api.DeviceBank;
 import com.bitwig.extension.controller.api.Device;
-//these are not in the regular APIs...they come from the Bitwig repo though. 
 
-//import com.bitwig.extensions.framework.BooleanObject;
+//these are not in the regular APIs...they come from the Bitwig repo though. 
 import com.bitwig.extensions.framework.Layer;
 import com.bitwig.extensions.framework.Layers;
-//import com.bitwig.extensions.util.NoteInputUtils;
 
+//my packages
 import com.presonus.handler.SysexHandler;
 
 
@@ -114,17 +91,10 @@ public class AtomSQExtension extends ControllerExtension
    private final static String  NOTE_PRES     = "a9????"; //poly aftertouch
    private final static String  NOTE_MOD      = "b001??";
    private final static String  NOTE_BEND     = "e0????";
+   //Encoders
    private final static int  CC_ENCODER_1     = 14;
-   //these may not be needed because the encoders are created in an iteration below. 
-   // private final static int  CC_ENCODER_2     = 15;
-   // private final static int  CC_ENCODER_3     = 16;
-   // private final static int  CC_ENCODER_4     = 17;
-   // private final static int  CC_ENCODER_5     = 18;
-   // private final static int  CC_ENCODER_6     = 19;
-   // private final static int  CC_ENCODER_7     = 20;
-   // private final static int  CC_ENCODER_8     = 21;
-   // private final static int[]  ENCODERS = {14,15,16,17,18,19,29,21};
-   // private final static int[] BUTTONARRAY = {36, 37, 38, 39, 40, 41};
+   //Enc 2-8 not needed because the encoders are created in an iteration below. 
+
 
    //ATOM colors
    private static final Color WHITE = Color.fromRGB(1, 1, 1);
@@ -140,7 +110,7 @@ public class AtomSQExtension extends ControllerExtension
  public static final SysexBuilder sB = new SysexBuilder();
 private  CursorDevice mCursorDevice;
 private  CursorTrack mCursorTrack;
-private CursorDeviceLayer  mCDL; 
+//private CursorDeviceLayer  mCDL; 
 private DeviceBank mCDLDBnk;
 private TrackBank mTrackBank;
 
@@ -164,12 +134,16 @@ private TrackBank mTrackBank;
       mApplication.canRedo().markInterested();
       mApplication.canUndo().markInterested();
 
-      final MidiIn midiIn = host.getMidiInPort(0);
-      midiIn.setMidiCallback((ShortMidiMessageReceivedCallback)msg -> onMidi0(msg));
-      mNoteInput = midiIn.createNoteInput (DEV_NAME, NOTE_ON, NOTE_OFF, NOTE_MOD, NOTE_BEND, NOTE_PRES);
-
+     
+     
       mMidiOut = host.getMidiOutPort(0);
       mMidiIn = host.getMidiInPort(0);
+      //HINT: Notes not playing? these values are configured for CH 10 on the midi controller, which is the default. If this is not set, close BW, then reset in the generic controller menu!
+      mMidiIn.createNoteInput (DEV_NAME, NOTE_ON, NOTE_OFF, NOTE_MOD, NOTE_BEND, NOTE_PRES);
+    
+      //mMidiIn.setMidiCallback((ShortMidiMessageReceivedCallback)msg -> onMidi0(msg));
+      //mNoteInput.setShouldConsumeEvents(true);
+
 
       //Cursor Track / Device stuff
       //the first int here dictates the number of sends! this is different than the arrainger track itself, so the number of sends on the actual track are not relevant.
@@ -215,6 +189,7 @@ private TrackBank mTrackBank;
       mCDLDBnk = mCDL.createDeviceBank(3); */
 
       mCDLDBnk = mCursorTrack.createDeviceBank(3);
+      
       
       mCDLDBnk.canScrollBackwards().markInterested();
       mCDLDBnk.canScrollForwards().markInterested();
@@ -944,10 +919,7 @@ public void moveDeviceRight() {
       mSongLayer.bind (mEncoders[7], mCursorTrack.volume());
 
       //Encoders
-      //this is not useful based on the actual arranger track, the cursor track is something else. see docs of cursor track
-      // int sends = mSendBank.getSizeOfBank();
-      // String sendsString = Integer.toString(sends);
-      // getHost().println(sendsString);
+  
       for (int i = 0; i < 6 ; i++)
       {
   
@@ -980,14 +952,6 @@ public void moveDeviceRight() {
       getHost().println("User");
       //deactivate other Mode layers
 
-      //initialize the bindings for this layer
-      //Display buttons
-      //mSongLayer.bindToggle (m1Button, mCursorDevice.isEnabled());
-      //mSongLayer.bindToggle(m2Button, mCursorDevice.isWindowOpen());
-      // mSongLayer.bindToggle(m3Button, mCursorTrack.arm());
-      // mSongLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
-      // mSongLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
-      // mSongLayer.bindToggle(m6Button, mCursorTrack.isActivated());
 
 
   
@@ -1226,7 +1190,8 @@ public void moveDeviceRight() {
 
    private void onMidi0(final ShortMidiMessage msg)
    {
-      // getHost().println(msg.toString());
+      //uncomment this to allow the midi messages to display in the console. 
+      getHost().println(msg.toString());
    }
    
    @Override

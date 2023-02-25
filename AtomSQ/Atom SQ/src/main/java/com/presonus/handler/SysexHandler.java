@@ -1,13 +1,5 @@
 package com.presonus.handler;
 
-//import java.util.HexFormat;
-import com.bitwig.extension.api.util.midi.SysexBuilder;
-import com.bitwig.extension.controller.api.Application;
-import com.bitwig.extension.controller.api.MidiOut;
-import com.bitwig.extension.controller.api.CursorTrack;
-
-
-//import com.presonus.AtomSQExtension;
 
 public class SysexHandler
 {
