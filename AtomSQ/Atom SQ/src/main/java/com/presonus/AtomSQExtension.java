@@ -164,12 +164,21 @@ private TrackBank mTrackBank;
       mApplication.canRedo().markInterested();
       mApplication.canUndo().markInterested();
 
-      final MidiIn midiIn = host.getMidiInPort(0);
-      midiIn.setMidiCallback((ShortMidiMessageReceivedCallback)msg -> onMidi0(msg));
-      mNoteInput = midiIn.createNoteInput (DEV_NAME, NOTE_ON, NOTE_OFF, NOTE_MOD, NOTE_BEND, NOTE_PRES);
+      //final MidiIn midiIn = host.getMidiInPort(0);
+     
+     
 
+      
       mMidiOut = host.getMidiOutPort(0);
       mMidiIn = host.getMidiInPort(0);
+       //left in as a test, at one point the constant based version failed. this consumes ALL the notes, so the controller buttons no longer respond
+      //mNoteInput = mMidiIn.createNoteInput(DEV_NAME, "?0????", "?1????", "?2????", "?3????", "?4????", "?5????", "?6????", "?7????", "?8????");
+      //HINT: Notes not playing? these values are configured for CH 10 on the midi controller, which is the default. If this is not set, close BW, then reset in the generic controller menu!
+      mMidiIn.createNoteInput (DEV_NAME, NOTE_ON, NOTE_OFF, NOTE_MOD, NOTE_BEND, NOTE_PRES);
+    
+      //mMidiIn.setMidiCallback((ShortMidiMessageReceivedCallback)msg -> onMidi0(msg));
+      //mNoteInput.setShouldConsumeEvents(true);
+
 
       //Cursor Track / Device stuff
       //the first int here dictates the number of sends! this is different than the arrainger track itself, so the number of sends on the actual track are not relevant.
@@ -1226,7 +1235,8 @@ public void moveDeviceRight() {
 
    private void onMidi0(final ShortMidiMessage msg)
    {
-      // getHost().println(msg.toString());
+      //uncomment this to allow the midi messages to display in the console. 
+      getHost().println(msg.toString());
    }
    
    @Override
