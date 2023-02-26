@@ -6,7 +6,7 @@ package com.presonus;
 
 import com.bitwig.extension.api.Color;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
-import com.bitwig.extension.callback.ShortMidiMessageReceivedCallback;
+//import com.bitwig.extension.callback.ShortMidiMessageReceivedCallback;
 import com.bitwig.extension.controller.ControllerExtension;
 import com.bitwig.extension.controller.api.Action;
 import com.bitwig.extension.controller.api.Application;
@@ -22,7 +22,7 @@ import com.bitwig.extension.controller.api.HardwareSurface;
 import com.bitwig.extension.controller.api.MidiExpressions;
 import com.bitwig.extension.controller.api.MidiIn;
 import com.bitwig.extension.controller.api.MidiOut;
-import com.bitwig.extension.controller.api.NoteInput;
+//import com.bitwig.extension.controller.api.NoteInput;
 import com.bitwig.extension.controller.api.OnOffHardwareLight;
 import com.bitwig.extension.controller.api.Parameter;
 import com.bitwig.extension.controller.api.RelativeHardwareKnob;
@@ -33,7 +33,7 @@ import com.bitwig.extension.controller.api.Track;
 import com.bitwig.extension.controller.api.TrackBank;
 import com.bitwig.extension.controller.api.MasterTrack;
 import com.bitwig.extension.controller.api.HardwareActionBindable;
-import com.bitwig.extension.controller.api.CursorDeviceLayer;
+//import com.bitwig.extension.controller.api.CursorDeviceLayer;
 import com.bitwig.extension.controller.api.DeviceBank;
 import com.bitwig.extension.controller.api.Device;
 
@@ -68,7 +68,7 @@ public class AtomSQExtension extends ControllerExtension
    private final static int  CC_SHIFT     =31;
    //A-H (only A works in Live mode)
    private final static int  CC_BTN_A     =64;
-   private final static int  CHAN_1 = 176;
+   //private final static int  CHAN_1 = 176;
    //private final static int  CHAN_2 = 177;
    //Display Buttons, top to bottom, left to right
    //1 2 3
@@ -106,8 +106,8 @@ public class AtomSQExtension extends ControllerExtension
    private static final Color BLUE = Color.fromRGB(0, 0, 1);
 
 
- final SysexHandler sH = new SysexHandler();
- public static final SysexBuilder sB = new SysexBuilder();
+ private  SysexHandler sH = new SysexHandler();
+ // private SysexBuilder sB = new SysexBuilder();
 private  CursorDevice mCursorDevice;
 private  CursorTrack mCursorTrack;
 //private CursorDeviceLayer  mCDL; 
@@ -289,8 +289,12 @@ private TrackBank mTrackBank;
 
       //Modes
       InstMode();
-      mCursorTrack.selectFirst();
-   
+      //mCursorTrack.selectParent();
+      //mCursorTrack.selectInMixer();
+      mApplication.selectFirst();
+      //mTrackBank.getItemAt(0);
+
+
       //Notifications      
       host.showPopupNotification("Atom SQ Initialized");
    }
@@ -550,6 +554,7 @@ public void moveDeviceLeft() {
    mCursorDevice.selectPrevious();
    mCursorDevice.selectNext();
 }
+
 public void moveDeviceRight() {
    final Device nextDevice = mCDLDBnk.getDevice(2);
    String ndn = nextDevice.name().get();
@@ -558,7 +563,6 @@ public void moveDeviceRight() {
    mCursorDevice.selectPrevious();
    mCursorDevice.selectNext();
 }
-
 
  private void moveTrack(Double value)
  {
@@ -815,6 +819,38 @@ public void moveDeviceRight() {
 
    }
 
+   private void createSongLayer()
+   {
+      //notifications
+      getHost().println("SongLayer active");
+      getHost().println("Song");
+      //deactivate other Mode layers
+
+      //initialize the bindings for this layer
+      //Display buttons
+      mSongLayer.bindToggle(m1Button, mCursorTrack.solo() );
+      mSongLayer.bindToggle(m2Button, mCursorTrack.mute());
+      mSongLayer.bindToggle(m3Button, mCursorTrack.arm());
+      mSongLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
+      mSongLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
+      //mSongLayer.bindToggle(m6Button, mCursorTrack.isActivated());
+        
+      //Encoders
+      mSongLayer.bind (mEncoders[6], mCursorTrack.pan());
+      mSongLayer.bind (mEncoders[7], mCursorTrack.volume());
+
+      //Encoders
+  
+      for (int i = 0; i < 6 ; i++)
+      {
+  
+         final Parameter parameter = mSendBank.getItemAt(i);
+         final RelativeHardwareKnob encoder = mEncoders[i];
+         mSongLayer.bind(encoder, parameter);
+      }
+
+   }
+
    private void createInstLayer()
    {
      // mInstLayer.bind(mEncoders[8], mMasterTrack.volume());
@@ -850,33 +886,13 @@ public void moveDeviceRight() {
       //mInst2Layer.bindToggle(m5Button, mCursorDevice.isMacroSectionVisible()); //macro is wrong, want modulation, cannot find rn.
    }
 
-   private void createDeviceMoveLayer()
-   {
-      getHost().println("DeviceMove Layer activated");
-   //Encoder 9
-   final HardwareActionBindable inc = getHost().createAction(() ->  moveDeviceRight(),  () -> "+");;
-   final HardwareActionBindable dec = getHost().createAction(() -> moveDeviceLeft(),  () -> "-");
-   mDeviceMoveLayer.bind(mEncoders[8], getHost().createRelativeHardwareControlStepTarget(inc, dec));
-
-   }
-
-   private void createTrackMoveLayer()
-   {
-      getHost().println("TrackMove Layer activated");
-   //Encoder 9
-   final HardwareActionBindable inc = getHost().createAction(() ->  moveTrack(1.0),  () -> "+");;
-   final HardwareActionBindable dec = getHost().createAction(() -> moveTrack(-1.0),  () -> "-");
-   mTrackMoveLayer.bind(mEncoders[8], getHost().createRelativeHardwareControlStepTarget(inc, dec));
-
-   }
-  
    private void createInst3Layer()
    {
       //Monitor mode
       //want to configure the Enc 9 to move either track or device.
       //TODO change this from toggle to pressed if possible. otherwise both can be on at once, and do not de-toggle unless you leave the menu. Encoder 9
-      mInst3Layer.bindToggle(m4Button, mDeviceMoveLayer);
-      mInst3Layer.bindToggle(m1Button, mTrackMoveLayer);
+      //mInst3Layer.bindToggle(m4Button, mDeviceMoveLayer);
+      //mInst3Layer.bindToggle(m1Button, mTrackMoveLayer);
       //mInst3Layer.bindToggle(m4Button,); 
       //app duplicate works on the selected item, which is always the track at the moment. If you manually click into the devices, then it deletes a device.
       mInst3Layer.bindPressed(m2Button, () -> {mApplication.focusPanelAbove(); mApplication.duplicate();});
@@ -896,38 +912,6 @@ public void moveDeviceRight() {
        // mCDLDBnk.scrollBackwards();
         //mCursorDevice.selectDevice(previousDevice);
       });
-   }
-
-   private void createSongLayer()
-   {
-      //notifications
-      getHost().println("SongLayer active");
-      getHost().println("Song");
-      //deactivate other Mode layers
-
-      //initialize the bindings for this layer
-      //Display buttons
-      mSongLayer.bindToggle(m1Button, mCursorTrack.solo() );
-      mSongLayer.bindToggle(m2Button, mCursorTrack.mute());
-      mSongLayer.bindToggle(m3Button, mCursorTrack.arm());
-      mSongLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
-      mSongLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
-      //mSongLayer.bindToggle(m6Button, mCursorTrack.isActivated());
-        
-      //Encoders
-      mSongLayer.bind (mEncoders[6], mCursorTrack.pan());
-      mSongLayer.bind (mEncoders[7], mCursorTrack.volume());
-
-      //Encoders
-  
-      for (int i = 0; i < 6 ; i++)
-      {
-  
-         final Parameter parameter = mSendBank.getItemAt(i);
-         final RelativeHardwareKnob encoder = mEncoders[i];
-         mSongLayer.bind(encoder, parameter);
-      }
-
    }
 
    private void createEditLayer()
@@ -957,6 +941,28 @@ public void moveDeviceRight() {
   
    }
   
+   private void createDeviceMoveLayer()
+   {
+      getHost().println("DeviceMove Layer activated");
+   //Encoder 9
+   final HardwareActionBindable inc = getHost().createAction(() ->  moveDeviceRight(),  () -> "+");;
+   final HardwareActionBindable dec = getHost().createAction(() -> moveDeviceLeft(),  () -> "-");
+   mDeviceMoveLayer.bind(mEncoders[8], getHost().createRelativeHardwareControlStepTarget(inc, dec));
+
+   }
+
+   private void createTrackMoveLayer()
+   {
+      getHost().println("TrackMove Layer activated");
+   //Encoder 9
+   final HardwareActionBindable inc = getHost().createAction(() ->  moveTrack(1.0),  () -> "+");;
+   final HardwareActionBindable dec = getHost().createAction(() -> moveTrack(-1.0),  () -> "-");
+   mTrackMoveLayer.bind(mEncoders[8], getHost().createRelativeHardwareControlStepTarget(inc, dec));
+
+   }
+  
+   
+
      ////////////////////////
     //       Modes        //
    ////////////////////////
@@ -966,7 +972,7 @@ public void moveDeviceRight() {
 
       //Main line 1 
       String pTrack = mCursorTrack.name().get();
-      byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("Track: ", 7).addString(pTrack, pTrack.length()).terminate();
+      byte[] sysex2 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("Track: ", 7).addString(pTrack, pTrack.length()).terminate();
          mMidiOut.sendSysex(sysex2);
       // String pLayout = mApplication.panelLayout().get();
       // byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
@@ -974,7 +980,7 @@ public void moveDeviceRight() {
 
       //Main line 2
       String pDev = mCursorDevice.name().get();
-      byte[] sysex3 = sB.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.white).addByte(sH.spc).addString("Device: ", 8).addString(pDev, pDev.length()).terminate();
+      byte[] sysex3 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.white).addByte(sH.spc).addString("Device: ", 8).addString(pDev, pDev.length()).terminate();
          mMidiOut.sendSysex(sysex3);
 
    }
@@ -1003,13 +1009,13 @@ public void moveDeviceRight() {
       for (int i = 0; i < 3; i++) 
       {
          final String msg = mTitles[i];
-         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
          mMidiOut.sendSysex(sysex);
       }
       for (int i = 3; i < 6; i++) 
       {
          final String msg = mTitles[i];
-         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
          mMidiOut.sendSysex(sysex);
       }
 
@@ -1041,13 +1047,13 @@ public void moveDeviceRight() {
       for (int i = 0; i < 3; i++) 
       {
          final String msg = mTitles[i];
-         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
          mMidiOut.sendSysex(sysex);
       }
       for (int i = 3; i < 6; i++) 
       {
          final String msg = mTitles[i];
-         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
          mMidiOut.sendSysex(sysex);
       }
 
@@ -1063,18 +1069,18 @@ public void moveDeviceRight() {
       mMidiOut.sendSysex("F0000106221400F7");
      
       //button titles
-      String[] mTitles= {"Move", "Duplicate", "Delete", "Move", "Duplicate", "Delete"};
+      String[] mTitles= {"", "Duplicate", "Delete", "", "Duplicate", "Delete"};
       
       for (int i = 0; i < 3; i++) 
       {
          final String msg = mTitles[i];
-         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
          mMidiOut.sendSysex(sysex);
       }
       for (int i = 3; i < 6; i++) 
       {
          final String msg = mTitles[i];
-         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
          mMidiOut.sendSysex(sysex);
       }
 
@@ -1106,13 +1112,13 @@ public void moveDeviceRight() {
       for (int i = 0; i < 3; i++) 
       {
          final String msg = mTitles[i];
-         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
          mMidiOut.sendSysex(sysex);
       }
       for (int i = 3; i < 6; i++) 
       {
          final String msg = mTitles[i];
-         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
          mMidiOut.sendSysex(sysex);
       }
 
@@ -1152,7 +1158,7 @@ public void moveDeviceRight() {
       for (int i = 0; i < 6; i++) 
       {
         final String msg = mTitles[i];
-         byte[] sysex = sB.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
          mMidiOut.sendSysex(sysex);
       }
 
@@ -1191,7 +1197,7 @@ public void moveDeviceRight() {
    private void onMidi0(final ShortMidiMessage msg)
    {
       //uncomment this to allow the midi messages to display in the console. 
-      getHost().println(msg.toString());
+      //getHost().println(msg.toString());
    }
    
    @Override
@@ -1255,34 +1261,32 @@ public void moveDeviceRight() {
    private SendBank mSendBank;
    public int sends;
 
+   //   //public static CursorTrack mCursorTrack;
+   //   public final CursorTrack mCursorTrack;
+   //   //changed from pinnable cursor device
+   //   private final CursorDevice mCursorDevice;
 
-   
+   private CursorRemoteControlsPage mRemoteControls;
 
-//   //public static CursorTrack mCursorTrack;
-//   public final CursorTrack mCursorTrack;
-//   //changed from pinnable cursor device
-//   private final CursorDevice mCursorDevice;
+   private Transport mTransport;
 
-  private CursorRemoteControlsPage mRemoteControls;
+   private MidiIn mMidiIn;
 
-  private Transport mTransport;
-
-  private MidiIn mMidiIn;
-
-  private MidiOut mMidiOut;
-//making public to usein SysexHandler. Static too
-private Application mApplication;
+   private MidiOut mMidiOut;
+   //making public to usein SysexHandler. Static too
+   private Application mApplication;
 
   private boolean mShift;
 
-  private NoteInput mNoteInput;
+  //private NoteInput mNoteInput;
 
   private HardwareSurface mHardwareSurface;
 
   private HardwareButton mShiftButton, mUpButton, mDownButton, mLeftButton, mRightButton, mForwardButton,
      mBackButton, mClickCountInButton, mRecordSaveButton, mPlayLoopButton, mStopUndoButton, mSongButton,
-     mSetLoopButton, mEditorButton, mNudgeQuantizeButton, mInstButton, mPresetPadSelectButton,
-     mBankButton, mUserButton, mNoteRepeatButton, mAButton, m1Button, m2Button, m3Button, m4Button, m5Button, m6Button;
+      mEditorButton, mInstButton, mUserButton,  mAButton, m1Button, m2Button, m3Button, m4Button, m5Button, m6Button;
+      //unused buttons
+     // mSetLoopButton, mBankButton, mNoteRepeatButton,  mNudgeQuantizeButton, mPresetPadSelectButton,
 
   private RelativeHardwareKnob[] mEncoders = new RelativeHardwareKnob[9];
   private final Layers mLayers = new Layers(this)
