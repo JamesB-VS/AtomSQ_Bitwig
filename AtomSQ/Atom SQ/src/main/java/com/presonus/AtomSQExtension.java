@@ -12,6 +12,7 @@ import com.bitwig.extension.controller.api.Action;
 import com.bitwig.extension.controller.api.Application;
 import com.bitwig.extension.controller.api.CursorDevice;
 import com.bitwig.extension.controller.api.ControllerHost;
+import com.bitwig.extension.controller.api.CursorBrowserFilterItem;
 import com.bitwig.extension.controller.api.CursorDeviceFollowMode;
 import com.bitwig.extension.controller.api.CursorRemoteControlsPage;
 import com.bitwig.extension.controller.api.CursorTrack;
@@ -36,6 +37,9 @@ import com.bitwig.extension.controller.api.HardwareActionBindable;
 //import com.bitwig.extension.controller.api.CursorDeviceLayer;
 import com.bitwig.extension.controller.api.DeviceBank;
 import com.bitwig.extension.controller.api.Device;
+import com.bitwig.extension.controller.api.PopupBrowser;
+import com.bitwig.extension.controller.api.BrowserFilterItem;
+import com.bitwig.extension.controller.api.BrowserResultsItem;
 
 //these are not in the regular APIs...they come from the Bitwig repo though. 
 import com.bitwig.extensions.framework.Layer;
@@ -113,6 +117,12 @@ private  CursorTrack mCursorTrack;
 //private CursorDeviceLayer  mCDL; 
 private DeviceBank mCDLDBnk;
 private TrackBank mTrackBank;
+private PopupBrowser mPopupBrowser;
+private BrowserResultsItem mBrowserResult;
+
+private BrowserFilterItem mBrowserCategory;
+
+private BrowserFilterItem mBrowserCreator;
 
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
    {
@@ -162,7 +172,7 @@ private TrackBank mTrackBank;
       mSendBank = mCursorTrack.sendBank();
       mCursorTrack.monitorMode().markInterested();
       mCursorTrack.isMonitoring().markInterested();
-
+      mCursorTrack.position().markInterested();
       //MasterTrack
       mMasterTrack = host.createMasterTrack(0);
       mMasterTrack.volume().markInterested();
@@ -179,8 +189,20 @@ private TrackBank mTrackBank;
       // mCursorDevice.nextAction().markInterested();
       // mCursorDevice.previousAction().markInterested();
       mCursorDevice.position().markInterested();
+      mCursorDevice.exists().markInterested();
       //create RCs for encoders
 
+
+      mPopupBrowser = host.createPopupBrowser();
+      mPopupBrowser.exists().markInterested();
+      mPopupBrowser.selectedContentTypeIndex().markInterested();
+
+      mBrowserResult = mPopupBrowser.resultsColumn().createCursorItem();
+      mBrowserCategory = mPopupBrowser.categoryColumn().createCursorItem();
+      mBrowserCreator = mPopupBrowser.creatorColumn().createCursorItem();
+      mBrowserResult.name().markInterested();
+      mBrowserCategory.name().markInterested();
+      mBrowserCreator.name().markInterested();
       //TODO clean this up after documenting. the layers were the problem, not necessary. variables needs renaming.
      /* commenting this out, as other scripts skip the layer bits. worth trying
       mCDL = mCursorDevice.createCursorLayer();
@@ -294,6 +316,12 @@ private TrackBank mTrackBank;
       mApplication.selectFirst();
       //mTrackBank.getItemAt(0);
 
+      mPopupBrowser.exists().addValueObserver(exists -> {
+         if (exists)
+            mBrowserLayer.activate();
+         else
+            mBrowserLayer.deactivate();
+      });
 
       //Notifications      
       host.showPopupNotification("Atom SQ Initialized");
@@ -636,6 +664,7 @@ public void moveDeviceRight() {
       mShiftLayer = createLayer ("Shift");
       mDeviceMoveLayer = createLayer("DeviceMove");
       mTrackMoveLayer = createLayer ("TrackMove");
+      mBrowserLayer = createLayer("Browser");
 
       createBaseLayer();
       createInstLayer();
@@ -647,6 +676,7 @@ public void moveDeviceRight() {
       createInst3Layer();
       createDeviceMoveLayer();
       createTrackMoveLayer();
+      createBrowserLayer();
 
       // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
    }
@@ -919,15 +949,31 @@ public void moveDeviceRight() {
       //notifications
       getHost().println("EditLayer active");
       getHost().println("Edit");
-     mEditLayer.bind(mEncoders[7], mMasterTrack.volume());
-      //deactivate other Mode layers
-      mEditLayer.bind (mEncoders[6], mCursorTrack.pan());
-      mEditLayer.bind (mEncoders[8], mCursorTrack.volume());
-      //this works as an example for adjusting the play start. save.
-      mEditLayer.bindPressed(m4Button, () -> {mTransport.playStartPosition().inc(1.0);});
-      mEditLayer.bindPressed(m5Button,() ->{moveDeviceLeft();});
-      mEditLayer.bindPressed(m6Button,() ->{moveDeviceRight();});
+   //   mEditLayer.bind(mEncoders[7], mMasterTrack.volume());
+   //    //deactivate other Mode layers
+   //    mEditLayer.bind (mEncoders[6], mCursorTrack.pan());
+   //    mEditLayer.bind (mEncoders[8], mCursorTrack.volume());
+   //    //this works as an example for adjusting the play start. save.
+   //    mEditLayer.bindPressed(m4Button, () -> {mTransport.playStartPosition().inc(1.0);});
+   //    mEditLayer.bindPressed(m5Button,() ->{moveDeviceLeft();});
+   //    mEditLayer.bindPressed(m6Button,() ->{moveDeviceRight();});
+
+      //this works, but puts the track "above" the cursor track. We want one below if possible.
+      //mEditLayer.bindPressed(m1Button, () -> {mApplication.createAudioTrack(mCursorTrack.position().get());});
+      // math works, just add one to the position. :)
+      mEditLayer.bindPressed(m1Button, () -> {mApplication.createAudioTrack(mCursorTrack.position().get()+1);});
+      mEditLayer.bindPressed(m6Button, () -> {startPresetBrowsing();});
+
+
+      //***************
+      //this is not working. I cannot see how to initialize the popup browser, and do not see how this work from other code examples.  */
+      //mEditLayer.bind(mEncoders[8], mPopupBrowser);
    }
+
+   // public PopupBrowser getBrowser() {
+   //    return mPopupBrowser;
+   // }
+
 
    private void createUserLayer()
    {
@@ -961,8 +1007,64 @@ public void moveDeviceRight() {
 
    }
   
-   
+ private void createBrowserLayer()
+   {
+      //to call this layer, use " layer.bindPressed(m6Button, () -> {startPresetBrowsing();});"
+      // this works with the method directly below, at least for devices.
+      final Layer layer = mBrowserLayer;
+      // layer.bindPressed(ButtonId.SELECT_MULTI, mPopupBrowser::cancel);
+      // layer.bind(WHITE, ButtonId.SELECT_MULTI);
 
+      // for (int i = 0; i < 4; i++)
+      // {
+      //    final int number = i;
+      //    final ButtonId selectId = ButtonId.select(i);
+
+      //    layer.bindPressed(selectId, () -> mPopupBrowser.selectedContentTypeIndex().set(number));
+      //    layer.bind(ORANGE, selectId);
+      // }
+
+      final CursorBrowserFilterItem categories = (CursorBrowserFilterItem)mPopupBrowser.categoryColumn()
+         .createCursorItem();
+      final CursorBrowserFilterItem creators = (CursorBrowserFilterItem)mPopupBrowser.creatorColumn()
+         .createCursorItem();
+
+      layer.bindPressed(m1Button, categories.selectPreviousAction());
+      // layer.bind(GREEN, ButtonId.SELECT5);
+
+      layer.bindPressed(m4Button, categories.selectNextAction());
+      // layer.bind(GREEN, ButtonId.SELECT6);
+
+     
+
+      // layer.bindPressed(ButtonId.SELECT7, creators.selectPreviousAction());
+      // layer.bind(RED, ButtonId.SELECT7);
+
+      // layer.bindPressed(ButtonId.SELECT8, creators.selectNextAction());
+      // layer.bind(RED, ButtonId.SELECT8);
+
+      // layer.bindPressed(ButtonId.PRESET_PREVIOUS, mPopupBrowser.cancelAction());
+      // layer.bindPressed(ButtonId.PRESET_NEXT, mPopupBrowser.commitAction());
+
+      // layer.bindToggle(ButtonId.WHEEL_CLICK, mPopupBrowser.commitAction(),
+      //    mCursorTrack.hasPrevious());
+      // layer.bind(mWheel, mPopupBrowser);
+
+      //layer.showText(mBrowserCategory.name(), mBrowserResult.name());
+   }  
+
+
+   private void startPresetBrowsing()
+   {
+      if (mCursorDevice.exists().get())
+      {
+         mCursorDevice.replaceDeviceInsertionPoint().browse();
+      }
+      else
+      {
+         mCursorDevice.deviceChain().endOfDeviceChainInsertionPoint().browse();
+      }
+   }
      ////////////////////////
     //       Modes        //
    ////////////////////////
@@ -1306,7 +1408,7 @@ public void moveDeviceRight() {
      }
   };
 
-private Layer mBaseLayer, mInstLayer, mSongLayer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mDeviceMoveLayer, mTrackMoveLayer;
+private Layer mBaseLayer, mInstLayer, mSongLayer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mDeviceMoveLayer, mTrackMoveLayer, mBrowserLayer;
 
 
 }
