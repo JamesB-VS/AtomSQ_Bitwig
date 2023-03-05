@@ -589,14 +589,17 @@ public class AtomSQExtension extends ControllerExtension
       // We create all the layers here because the main layer might bind actions to activate other layers.
       //called in Init
       mBaseLayer = createLayer("Base");
-      mInstLayer = createLayer("Instrument");
+     
       mSongLayer = createLayer("Song");
-      mEditLayer = createLayer ("Edit");
-      mUserLayer = createLayer("User");
+      mSong2Layer = createLayer("Song2");
+
+      mInstLayer = createLayer("Instrument");
       mInst2Layer = createLayer ("Inst2");
       mInst3Layer = createLayer ("Inst3");
-      mShiftLayer = createLayer ("Shift");
+      mEditLayer = createLayer ("Edit");
+      mUserLayer = createLayer("User");
 
+      mShiftLayer = createLayer ("Shift");
       mBrowserLayer = createLayer("Browser");
 
       createBaseLayer();
@@ -607,7 +610,7 @@ public class AtomSQExtension extends ControllerExtension
       createInst2Layer();
       createShiftLayer();
       createInst3Layer();
-
+      createSong2Layer();
       createBrowserLayer();
 
       // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
@@ -650,6 +653,11 @@ public class AtomSQExtension extends ControllerExtension
             mInst2Layer.activate();
             Inst2Mode();
          }
+         else if (mSong2Layer.isActive()){
+            mSong2Layer.deactivate();
+            SongMode();
+         }
+         
       });
          
       mBaseLayer.bindPressed(mForwardButton, () -> {
@@ -667,6 +675,10 @@ public class AtomSQExtension extends ControllerExtension
             mInst2Layer.deactivate();
             mInst3Layer.activate();
             Inst3Mode();
+         }
+         else if (mSongLayer.isActive()){
+            mSong2Layer.activate();
+            Song2Mode();
          }
 
       });
@@ -784,33 +796,40 @@ public class AtomSQExtension extends ControllerExtension
    private void createSongLayer()
    {
       //notifications
-      getHost().println("SongLayer active");
-      getHost().println("Song");
+      // getHost().println("SongLayer active");
+      // getHost().println("Song");
       //deactivate other Mode layers
 
-      //initialize the bindings for this layer
       //Display buttons
-      mSongLayer.bindToggle(m1Button, mCursorTrack.solo() );
-      mSongLayer.bindToggle(m2Button, mCursorTrack.mute());
+      mSongLayer.bindToggle(m1Button, mCursorTrack.mute() );
+      mSongLayer.bindToggle(m2Button, mCursorTrack.solo());
       mSongLayer.bindToggle(m3Button, mCursorTrack.arm());
-      mSongLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
-      mSongLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
-      //mSongLayer.bindToggle(m6Button, mCursorTrack.isActivated());
-        
-      //Encoders
+      //mSongLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
+      mSongLayer.bindPressed(m5Button,() ->{moveTrackUp();});
+      mSongLayer.bindPressed(m6Button, () ->{moveTrackDown();});
+     
+      //Track Encoders
       mSongLayer.bind (mEncoders[6], mCursorTrack.pan());
       mSongLayer.bind (mEncoders[7], mCursorTrack.volume());
 
-      //Encoders
-  
+      //Send Encoders
       for (int i = 0; i < 6 ; i++)
       {
-  
          final Parameter parameter = mSendBank.getItemAt(i);
          final RelativeHardwareKnob encoder = mEncoders[i];
          mSongLayer.bind(encoder, parameter);
       }
 
+   }
+
+   private void createSong2Layer() {
+
+      mSong2Layer.bindToggle(m1Button, mCursorTrack.isActivated());
+      mSong2Layer.bindPressed(m2Button, () -> {mApplication.focusPanelAbove(); mApplication.duplicate();});
+      mSong2Layer.bindPressed(m3Button, () -> {mApplication.focusPanelAbove(); mCursorTrack.deleteObject();});
+      mSong2Layer.bindPressed(m4Button, () -> {mApplication.createAudioTrack(mCursorTrack.position().get()+1);});  
+      mSong2Layer.bindPressed(m5Button, () -> {mApplication.createInstrumentTrack(mCursorTrack.position().get()+1);});  
+      mSong2Layer.bindPressed(m6Button, () -> {mApplication.createEffectTrack(mCursorTrack.position().get()+1);});  
    }
 
    private void createInstLayer()
@@ -821,12 +840,13 @@ public class AtomSQExtension extends ControllerExtension
       //initialize the bindings for this layer
       getHost().println("Inst");
 
-      mInstLayer.bindToggle(m1Button, mCursorTrack.solo() );
-      mInstLayer.bindToggle(m2Button, mCursorTrack.mute());
-      mInstLayer.bindToggle(m3Button, mCursorTrack.arm());
-      mInstLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
-      mInstLayer.bindToggle(m5Button, mCursorDevice.isWindowOpen());
-      //mInstLayer.bindToggle(m6Button, mCursorTrack.isActivated());
+      mInstLayer.bindToggle(m1Button, mCursorDevice.isEnabled(), mCursorDevice.isEnabled() );
+      mInstLayer.bindToggle(m2Button, mCursorDevice.isWindowOpen(), mCursorDevice.isWindowOpen());
+      mInstLayer.bindToggle(m3Button, mCursorDevice.isExpanded(), mCursorDevice.isExpanded());
+      mInstLayer.bindToggle(m4Button,mCursorDevice.isRemoteControlsSectionVisible(), mCursorDevice.isRemoteControlsSectionVisible());
+      //B5 reserved for showing modulators
+      //mInstLayer.bindToggle(m5Button, );
+      mInstLayer.bindPressed(m6Button, () -> {startPresetBrowsing();});
         
       //Encoders
       for (int i = 0; i < 8; i++)
@@ -842,10 +862,14 @@ public class AtomSQExtension extends ControllerExtension
    private void createInst2Layer()
    {
       //Monitor mode
-      mInst2Layer.bindToggle(m4Button, mCursorDevice.isExpanded(), mCursorDevice.isExpanded()); //expand
-      mInst2Layer.bindToggle(m5Button, mCursorDevice.isRemoteControlsSectionVisible(), mCursorDevice.isRemoteControlsSectionVisible()); //controls
-      mInst2Layer.bindToggle(m3Button, mCursorTrack.isActivated());
+      //mInst2Layer.bindToggle(m4Button, mCursorDevice.isExpanded(), mCursorDevice.isExpanded()); //expand
+      //mInst2Layer.bindToggle(m5Button, mCursorDevice.isRemoteControlsSectionVisible(), mCursorDevice.isRemoteControlsSectionVisible()); //controls
+      //mInst2Layer.bindToggle(m3Button, mCursorTrack.isActivated());
       //mInst2Layer.bindToggle(m5Button, mCursorDevice.isMacroSectionVisible()); //macro is wrong, want modulation, cannot find rn.
+      mInst2Layer.bindPressed(m2Button, () -> {mApplication.focusPanelBelow(); mApplication.duplicate();});
+      mInst2Layer.bindPressed(m3Button, () -> {mApplication.focusPanelBelow(); mCursorDevice.deleteObject();});
+      mInst2Layer.bindPressed(m4Button, () -> {mCursorDevice.beforeDeviceInsertionPoint().browse();});
+      mInst2Layer.bindPressed(m6Button, () -> {mCursorDevice.afterDeviceInsertionPoint().browse();});
    }
 
    private void createInst3Layer()
@@ -857,7 +881,7 @@ public class AtomSQExtension extends ControllerExtension
       //mInst3Layer.bindToggle(m1Button, mTrackMoveLayer);
       //mInst3Layer.bindToggle(m4Button,); 
       //app duplicate works on the selected item, which is always the track at the moment. If you manually click into the devices, then it deletes a device.
-      mInst3Layer.bindPressed(m2Button, () -> {mApplication.focusPanelAbove(); mApplication.duplicate();});
+      //mInst3Layer.bindPressed(m2Button, () -> {mApplication.focusPanelAbove(); mApplication.duplicate();});
       mInst3Layer.bindPressed(m3Button, () -> {mApplication.focusPanelAbove(); mCursorTrack.deleteObject();});
       //TODO make a logic statement here that disallows a duplication or deletion if the bottom panel is not selected. pop-up too
       mInst3Layer.bindPressed(m5Button, () -> {mApplication.focusPanelBelow(); mApplication.duplicate();});
@@ -896,8 +920,8 @@ public class AtomSQExtension extends ControllerExtension
       //mEditLayer.bindPressed(m1Button, () -> {mApplication.createAudioTrack(mCursorTrack.position().get());});
       // math works, just add one to the position. :)
 
-      mEditLayer.bindPressed(m1Button, () -> {mApplication.createAudioTrack(mCursorTrack.position().get()+1);});
-      mEditLayer.bindPressed(m6Button, () -> {startPresetBrowsing();});
+      //mEditLayer.bindPressed(m1Button, () -> {mApplication.createAudioTrack(mCursorTrack.position().get()+1);});
+      //mEditLayer.bindPressed(m6Button, () -> {startPresetBrowsing();});
 
    }
 
@@ -917,8 +941,6 @@ public class AtomSQExtension extends ControllerExtension
 
   
    }
-  
-
   
  private void createBrowserLayer()
    {
@@ -966,7 +988,6 @@ public class AtomSQExtension extends ControllerExtension
       //layer.showText(mBrowserCategory.name(), mBrowserResult.name());
    }  
 
-
    private void startPresetBrowsing()
    {
       if (mCursorDevice.exists().get())
@@ -978,6 +999,8 @@ public class AtomSQExtension extends ControllerExtension
          mCursorDevice.deviceChain().endOfDeviceChainInsertionPoint().browse();
       }
    }
+
+
      ////////////////////////
     //       Modes        //
    ////////////////////////
@@ -1000,11 +1023,86 @@ public class AtomSQExtension extends ControllerExtension
 
    }
 
+   private void SongMode ()
+   {
+      //getHost().println("SongMode");
+      getHost().showPopupNotification("Tracks");
+      mApplication.focusPanelAbove();
+      //mApplication.setPanelLayout("MIX");
+
+      //lights on buttons
+      mMidiOut.sendMidi(176, CC_SONG, 127);
+      mMidiOut.sendMidi(176, CC_INST, 00);
+      mMidiOut.sendMidi(176, CC_EDIT, 00);
+      mMidiOut.sendMidi(176, CC_USER, 00);
+
+
+      mMidiOut.sendSysex("F0000106221300F7");
+      mMidiOut.sendSysex("F0000106221400F7");
+     
+      //button titles
+      String[] mTitles= {"Mute", "Solo", "Arm", "", "Move Up", "Move Down"};
+
+      for (int i = 0; i < 6; i++) 
+      {
+         final String msg = mTitles[i];
+         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         mMidiOut.sendSysex(sysex);
+      }
+
+
+      // //Main line 1 
+      // String pLayout = mApplication.panelLayout().get();
+      // byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
+      //    mMidiOut.sendSysex(sysex2);
+
+      // //Main line 2
+      // String pTrack = mCursorTrack.name().get();
+      // byte[] sysex3 = sB.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.yellow).addByte(sH.spc).addString(pTrack, pTrack.length()).terminate();
+      //    mMidiOut.sendSysex(sysex3);
+
+
+
+     mMidiOut.sendSysex("F0000106221301F7");
+   }
+
+   private void Song2Mode ()
+   {
+      //getHost().println("SongMode");
+      getHost().showPopupNotification("Tracks");
+     
+      //mApplication.setPanelLayout("MIX");
+
+      //lights on buttons
+      mMidiOut.sendMidi(176, CC_SONG, 127);
+      mMidiOut.sendMidi(176, CC_INST, 00);
+      mMidiOut.sendMidi(176, CC_EDIT, 00);
+      mMidiOut.sendMidi(176, CC_USER, 00);
+
+
+      mMidiOut.sendSysex("F0000106221300F7");
+      mMidiOut.sendSysex("F0000106221400F7");
+     
+      //button titles
+      String[] mTitles= {"Active", "Copy", "Delete", "New Audio", "New Inst", "New FX"};
+
+      for (int i = 0; i < 6; i++) 
+      {
+         final String msg = mTitles[i];
+         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         mMidiOut.sendSysex(sysex);
+      }
+
+     mMidiOut.sendSysex("F0000106221301F7");
+   }
+
    private void InstMode ()
    {
+      getHost().showPopupNotification("Devices");
+      mApplication.focusPanelBelow();
       //getHost().println("InstMode");
       //getHost().showPopupNotification("Instrument Mode");
-      mApplication.setPanelLayout("ARRANGE");
+      //mApplication.setPanelLayout("ARRANGE");
       //activate layer, deactivate others (for encoders)
      // mInstLayer.activate();
 
@@ -1019,15 +1117,9 @@ public class AtomSQExtension extends ControllerExtension
       mMidiOut.sendSysex("F0000106221400F7");
      
       //button titles
-      String[] mTitles= {"Mute", "Solo", "Arm", "Enabled", "Wndw", ""};
+      String[] mTitles= {"Enabled", "Wndw", "Expand", "RCtrls", "", "Presets"};
 
-      for (int i = 0; i < 3; i++) 
-      {
-         final String msg = mTitles[i];
-         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
-         mMidiOut.sendSysex(sysex);
-      }
-      for (int i = 3; i < 6; i++) 
+      for (int i = 0; i < 6; i++) 
       {
          final String msg = mTitles[i];
          byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
@@ -1055,17 +1147,11 @@ public class AtomSQExtension extends ControllerExtension
       //button titles
       //temporarily removing the bits that do not yet work yet
       //String[] mTitles= {"Source", "Dest", "MonMode", "Expand", "Macro", "Controls"};
-      String[] mTitles= {"", "", "Active", "Expand", "Controls", ""};
+      String[] mTitles= {"", "Copy", "Delete", "<New", "", "New>"};
       //Track: source, monitor, group?, group expand, destination
       //Device: presets? chain, createDeviceBrowser, isExpanded, isMacroSelectionVisible, isRemoteControlsSectionVisible()
       
-      for (int i = 0; i < 3; i++) 
-      {
-         final String msg = mTitles[i];
-         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
-         mMidiOut.sendSysex(sysex);
-      }
-      for (int i = 3; i < 6; i++) 
+      for (int i = 0; i < 6; i++) 
       {
          final String msg = mTitles[i];
          byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
@@ -1102,54 +1188,6 @@ public class AtomSQExtension extends ControllerExtension
       // Encoder 9...must recenter it? 00 and 127 have no other visible effect.
       mMidiOut.sendMidi(176, 29, 00);
       mMidiOut.sendSysex("F0000106221301F7");
-   }
-
-   private void SongMode ()
-   {
-      getHost().println("SongMode");
-      getHost().showPopupNotification("Song Mode");
-     
-      mApplication.setPanelLayout("MIX");
-
-              //lights on buttons
-              mMidiOut.sendMidi(176, CC_SONG, 127);
-              mMidiOut.sendMidi(176, CC_INST, 00);
-              mMidiOut.sendMidi(176, CC_EDIT, 00);
-              mMidiOut.sendMidi(176, CC_USER, 00);
-
-
-     mMidiOut.sendSysex("F0000106221300F7");
-     mMidiOut.sendSysex("F0000106221400F7");
-     
-      //button titles
-      String[] mTitles= {"Mute", "Solo", "Arm", "Enabled", "Wndw", ""};
-
-      for (int i = 0; i < 3; i++) 
-      {
-         final String msg = mTitles[i];
-         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
-         mMidiOut.sendSysex(sysex);
-      }
-      for (int i = 3; i < 6; i++) 
-      {
-         final String msg = mTitles[i];
-         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
-         mMidiOut.sendSysex(sysex);
-      }
-
-      // //Main line 1 
-      // String pLayout = mApplication.panelLayout().get();
-      // byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
-      //    mMidiOut.sendSysex(sysex2);
-
-      // //Main line 2
-      // String pTrack = mCursorTrack.name().get();
-      // byte[] sysex3 = sB.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.yellow).addByte(sH.spc).addString(pTrack, pTrack.length()).terminate();
-      //    mMidiOut.sendSysex(sysex3);
-
-
-
-     mMidiOut.sendSysex("F0000106221301F7");
    }
 
    private void EditMode ()
@@ -1294,6 +1332,6 @@ public class AtomSQExtension extends ControllerExtension
      }
   };
 
-private Layer mBaseLayer, mInstLayer, mSongLayer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer;
+private Layer mBaseLayer, mInstLayer, mSongLayer, mSong2Layer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer;
 
 }
