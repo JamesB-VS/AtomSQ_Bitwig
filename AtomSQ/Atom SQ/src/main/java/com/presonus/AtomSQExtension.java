@@ -1,9 +1,5 @@
 package com.presonus;
 
-
-
-
-
 import com.bitwig.extension.api.Color;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 //import com.bitwig.extension.callback.ShortMidiMessageReceivedCallback;
@@ -47,7 +43,6 @@ import com.bitwig.extensions.framework.Layers;
 
 //my packages
 import com.presonus.handler.SysexHandler;
-
 
 public class AtomSQExtension extends ControllerExtension
 {
@@ -99,7 +94,6 @@ public class AtomSQExtension extends ControllerExtension
    private final static int  CC_ENCODER_1     = 14;
    //Enc 2-8 not needed because the encoders are created in an iteration below. 
 
-
    //ATOM colors
    private static final Color WHITE = Color.fromRGB(1, 1, 1);
    private static final Color BLACK = Color.fromRGB(0, 0, 0);
@@ -119,9 +113,7 @@ public class AtomSQExtension extends ControllerExtension
    private TrackBank mTrackBank;
    private PopupBrowser mPopupBrowser;
    private BrowserResultsItem mBrowserResult;
-
    private BrowserFilterItem mBrowserCategory;
-
    private BrowserFilterItem mBrowserCreator;
 
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
@@ -142,8 +134,6 @@ public class AtomSQExtension extends ControllerExtension
       mApplication.canRedo().markInterested();
       mApplication.canUndo().markInterested();
 
-     
-     
       mMidiOut = host.getMidiOutPort(0);
       mMidiIn = host.getMidiInPort(0);
       //HINT: Notes not playing? these values are configured for CH 10 on the midi controller, which is the default. If this is not set, close BW, then reset in the generic controller menu!
@@ -151,7 +141,6 @@ public class AtomSQExtension extends ControllerExtension
     
       //mMidiIn.setMidiCallback((ShortMidiMessageReceivedCallback)msg -> onMidi0(msg));
       //mNoteInput.setShouldConsumeEvents(true);
-
 
       //Cursor Track / Device stuff
       //the first int here dictates the number of sends! this is different than the arrainger track itself, so the number of sends on the actual track are not relevant.
@@ -573,7 +562,7 @@ public class AtomSQExtension extends ControllerExtension
       mCursorDevice.selectNext();
    }
 
-   public void moveTrackUp(){
+   public void moveTrackUp() {
       final Track previousTrack = mTrackBank.getItemAt(0);
       previousTrack.beforeTrackInsertionPoint().moveTracks(mCursorTrack);
       mCursorTrack.selectPrevious();
@@ -581,7 +570,7 @@ public class AtomSQExtension extends ControllerExtension
 
    }
 
-   public void moveTrackDown(){
+   public void moveTrackDown() {
       final Track nextTrack = mTrackBank.getItemAt(2);
       nextTrack.afterTrackInsertionPoint().moveTracks(mCursorTrack);
       mCursorTrack.selectPrevious();
@@ -910,10 +899,6 @@ public class AtomSQExtension extends ControllerExtension
       mEditLayer.bindPressed(m1Button, () -> {mApplication.createAudioTrack(mCursorTrack.position().get()+1);});
       mEditLayer.bindPressed(m6Button, () -> {startPresetBrowsing();});
 
-
-      //***************
-      //this is not working. I cannot see how to initialize the popup browser, and do not see how this work from other code examples.  */
-      //mEditLayer.bind(mEncoders[8], mPopupBrowser);
    }
 
    // public PopupBrowser getBrowser() {
@@ -1240,25 +1225,22 @@ public class AtomSQExtension extends ControllerExtension
       updateDisplay();
       //updateSends();
       
-      //for testing the calling of devices from the device bank. This is not working, and holds up the move and re-orientation after delete functions
-      String mcdname = mCursorDevice.name().get();
-      getHost().println("Cursor Device is: "+mcdname);
-
-      for (int i = 0; i < mCDLDBnk.getSizeOfBank(); i++) {
-
-         Device device = mCDLDBnk.getDevice(i);
-      String  devname = device.name().get();
-      getHost().println("device"+i+" name is "+devname);
-      }
-
-      String  mctname = mCursorTrack.name().get();
-      getHost().println("Cursor Track is: "+mctname);
-      for (int i = 0; i < mTrackBank.getSizeOfBank(); i++) {
-
-         Track track = mTrackBank.getItemAt(i);
-      String  trackname = track.name().get();
-      getHost().println("Track"+i+" name is "+trackname);
-      }
+      // //for testing the calling of devices from the device bank.
+      // String mcdname = mCursorDevice.name().get();
+      // getHost().println("Cursor Device is: "+mcdname);
+      // for (int i = 0; i < mCDLDBnk.getSizeOfBank(); i++) {
+      //    Device device = mCDLDBnk.getDevice(i);
+      //    String  devname = device.name().get();
+      //    getHost().println("device"+i+" name is "+devname);
+      // }
+      // //to review track bank
+      // String  mctname = mCursorTrack.name().get();
+      // getHost().println("Cursor Track is: "+mctname);
+      // for (int i = 0; i < mTrackBank.getSizeOfBank(); i++) {
+      //    Track track = mTrackBank.getItemAt(i);
+      //    String  trackname = track.name().get();
+      //    getHost().println("Track"+i+" name is "+trackname);
+      // }
 
    }
 
@@ -1280,34 +1262,20 @@ public class AtomSQExtension extends ControllerExtension
    private MasterTrack mMasterTrack;
    private SendBank mSendBank;
    public int sends;
-
-   //   //public static CursorTrack mCursorTrack;
-   //   public final CursorTrack mCursorTrack;
-   //   //changed from pinnable cursor device
-   //   private final CursorDevice mCursorDevice;
-
    private CursorRemoteControlsPage mRemoteControls;
-
    private Transport mTransport;
-
    private MidiIn mMidiIn;
-
    private MidiOut mMidiOut;
    //making public to usein SysexHandler. Static too
    private Application mApplication;
-
-  private boolean mShift;
-
+   private boolean mShift;
   //private NoteInput mNoteInput;
-
   private HardwareSurface mHardwareSurface;
-
   private HardwareButton mShiftButton, mUpButton, mDownButton, mLeftButton, mRightButton, mForwardButton,
      mBackButton, mClickCountInButton, mRecordSaveButton, mPlayLoopButton, mStopUndoButton, mSongButton,
       mEditorButton, mInstButton, mUserButton,  mAButton, m1Button, m2Button, m3Button, m4Button, m5Button, m6Button;
       //unused buttons
      // mSetLoopButton, mBankButton, mNoteRepeatButton,  mNudgeQuantizeButton, mPresetPadSelectButton,
-
   private RelativeHardwareKnob[] mEncoders = new RelativeHardwareKnob[9];
   private final Layers mLayers = new Layers(this)
   {
@@ -1327,6 +1295,5 @@ public class AtomSQExtension extends ControllerExtension
   };
 
 private Layer mBaseLayer, mInstLayer, mSongLayer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer;
-
 
 }
