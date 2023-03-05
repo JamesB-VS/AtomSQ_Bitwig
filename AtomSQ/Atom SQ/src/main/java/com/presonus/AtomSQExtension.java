@@ -110,19 +110,19 @@ public class AtomSQExtension extends ControllerExtension
    private static final Color BLUE = Color.fromRGB(0, 0, 1);
 
 
- private  SysexHandler sH = new SysexHandler();
- // private SysexBuilder sB = new SysexBuilder();
-private CursorDevice mCursorDevice;
-private CursorTrack mCursorTrack;
-//private CursorDeviceLayer  mCDL; 
-private  DeviceBank mCDLDBnk;
-private TrackBank mTrackBank;
-private PopupBrowser mPopupBrowser;
-private BrowserResultsItem mBrowserResult;
+   private  SysexHandler sH = new SysexHandler();
+   // private SysexBuilder sB = new SysexBuilder();
+   private CursorDevice mCursorDevice;
+   private CursorTrack mCursorTrack;
+   //private CursorDeviceLayer  mCDL; 
+   private  DeviceBank mCDLDBnk;
+   private TrackBank mTrackBank;
+   private PopupBrowser mPopupBrowser;
+   private BrowserResultsItem mBrowserResult;
 
-private BrowserFilterItem mBrowserCategory;
+   private BrowserFilterItem mBrowserCategory;
 
-private BrowserFilterItem mBrowserCreator;
+   private BrowserFilterItem mBrowserCreator;
 
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
    {
@@ -132,8 +132,6 @@ private BrowserFilterItem mBrowserCreator;
    @Override
    public void init()
    {
-
-       //public static CursorTrack mCursorTrack;
     
   //changed from pinnable cursor device
 
@@ -207,16 +205,9 @@ private BrowserFilterItem mBrowserCreator;
       mBrowserCategory.name().markInterested();
       mBrowserCreator.name().markInterested();
       //TODO clean this up after documenting. the layers were the problem, not necessary. variables needs renaming.
-     /* commenting this out, as other scripts skip the layer bits. worth trying
-      mCDL = mCursorDevice.createCursorLayer();
-
-      //a device bank of 3, to allow for scrolling, which should work to select a device when deleting one.
-      mCDLDBnk = mCDL.createDeviceBank(3); */
-
+     
       mCDLDBnk = mCursorTrack.createDeviceBank(3);
      //mCDLDBnk = mCursorDevice.deviceChain().createDeviceBank(3);
-   
-
       mCDLDBnk.canScrollBackwards().markInterested();
       mCDLDBnk.canScrollForwards().markInterested();
       mCDLDBnk.scrollPosition().markInterested();
@@ -229,9 +220,16 @@ private BrowserFilterItem mBrowserCreator;
          device.position().markInterested();
       }
 
+      //this! this makes the bank follow the cursor device!
+      mCursorDevice.position().addValueObserver(cp -> {
+         if (cp >= 0) {
+            mCDLDBnk.scrollPosition().set(cp - 1);
+         }
+      });
+
 
      // mTrackBank = mCursorTrack.createTrackBank(3,0,0,false);
-      mTrackBank = host.createTrackBank(1,0,0,true);
+      mTrackBank = host.createTrackBank(3,0,0,true);
       mTrackBank.followCursorTrack(mCursorTrack);
       mTrackBank.canScrollBackwards().markInterested();
       mTrackBank.canScrollForwards().markInterested();
@@ -247,6 +245,12 @@ private BrowserFilterItem mBrowserCreator;
          track.position().markInterested();
          track.isGroup().markInterested();
       }
+
+      mCursorTrack.position().addValueObserver(cp -> {
+         if (cp >= 0) {
+            mTrackBank.scrollPosition().set(cp - 1);
+         }
+      });
 
       mRemoteControls = mCursorDevice.createCursorRemoteControlsPage("CursorPage1", 8, "");
       mRemoteControls.setHardwareLayout(HardwareControlType.ENCODER, 8);
@@ -327,13 +331,7 @@ private BrowserFilterItem mBrowserCreator;
             mBrowserLayer.deactivate();
       });
 
-      //this! this makes the bank follow the cursor device!
-      mCursorDevice.position().addValueObserver(cp -> {
-         if (cp >= 0) {
-            mCDLDBnk.scrollPosition().set(cp - 1);
-         }
-      });
-
+      
 
       //Notifications      
       host.showPopupNotification("Atom SQ Initialized");
@@ -557,81 +555,40 @@ private BrowserFilterItem mBrowserCreator;
      
     }  
 
-
-
-//attempt with bank of 1....
-public void moveDeviceLeft() {
-   final Device previousDevice = mCDLDBnk.getDevice(0);
-   // String pdn = previousDevice.name().get();
-   // getHost().println(pdn);
-   previousDevice.beforeDeviceInsertionPoint().moveDevices(mCursorDevice);
-   mCursorDevice.selectPrevious();
-   mCursorDevice.selectNext();
-}
-
-public void moveDeviceRight() {
-   final Device nextDevice = mCDLDBnk.getDevice(2);
-   // String ndn = nextDevice.name().get();
-   // getHost().println(ndn);
-   nextDevice.afterDeviceInsertionPoint().moveDevices(mCursorDevice);
-   mCursorDevice.selectPrevious();
-   mCursorDevice.selectNext();
-}
-
-
-
- private void moveTrack(Double value)
- {
-   getHost().println("move Track activated");
-   
-   final Track track = mTrackBank.getItemAt(0);
-   final Track previousTrack = mTrackBank.getItemAt(0);
-   String pdn = previousTrack.name().get();
-   getHost().println(pdn);
-   final Track nextTrack = mTrackBank.getItemAt(2);
-   String ndn = nextTrack.name().get();
-   getHost().println(ndn);
-   if (value == 1.0)
-   {
-      getHost().println("down");
-      track.afterTrackInsertionPoint().moveTracks(mCursorTrack);
-      mCursorTrack.selectPrevious();
-      mCursorTrack.selectNext();
+   public void moveDeviceLeft() {
+      final Device previousDevice = mCDLDBnk.getDevice(0);
+      // String pdn = previousDevice.name().get();
+      // getHost().println(pdn);
+      previousDevice.beforeDeviceInsertionPoint().moveDevices(mCursorDevice);
+      mCursorDevice.selectPrevious();
+      mCursorDevice.selectNext();
    }
-   else if (value == -1.0)
-   {
-      getHost().println("up");
-      track.beforeTrackInsertionPoint().moveTracks(mCursorTrack);
-      mCursorTrack.selectNext();
-      mCursorTrack.selectPrevious();
 
+   public void moveDeviceRight() {
+      final Device nextDevice = mCDLDBnk.getDevice(2);
+      // String ndn = nextDevice.name().get();
+      // getHost().println(ndn);
+      nextDevice.afterDeviceInsertionPoint().moveDevices(mCursorDevice);
+      mCursorDevice.selectPrevious();
+      mCursorDevice.selectNext();
    }
-}
 
-/*  private void moveTrack(Double value)
- {
-   getHost().println("move Track activated");
-   Track track = mCursorTrack;
-   int pos = track.position().get();
-   Track prev =  //Stopped here. Need a function maybe, just a way to grab the track, or refocus on the position alone. Would then need to use position to define the track insertion point.;
-  
-   if (value == 1.0)
-   {
-      getHost().println("down");
-      .afterTrackInsertionPoint().moveTracks(mCursorTrack);
-   }
-   else if (value == -1.0)
-   {
-      getHost().println("up");
+   public void moveTrackUp(){
+      final Track previousTrack = mTrackBank.getItemAt(0);
       previousTrack.beforeTrackInsertionPoint().moveTracks(mCursorTrack);
+      mCursorTrack.selectPrevious();
+      mCursorTrack.selectNext();
+
    }
 
-   final Device nextDevice = deviceBank.getDevice(2);
-      nextDevice.afterDeviceInsertionPoint().moveDevices(cursorDevice);
-      cursorDevice.selectPrevious();
-      cursorDevice.selectNext();
-   
- } */
+   public void moveTrackDown(){
+      final Track nextTrack = mTrackBank.getItemAt(2);
+      nextTrack.afterTrackInsertionPoint().moveTracks(mCursorTrack);
+      mCursorTrack.selectPrevious();
+      mCursorTrack.selectNext();
+      
+   }
+ 
 
 
      ////////////////////////
@@ -650,8 +607,7 @@ public void moveDeviceRight() {
       mInst2Layer = createLayer ("Inst2");
       mInst3Layer = createLayer ("Inst3");
       mShiftLayer = createLayer ("Shift");
-      mDeviceMoveLayer = createLayer("DeviceMove");
-      mTrackMoveLayer = createLayer ("TrackMove");
+
       mBrowserLayer = createLayer("Browser");
 
       createBaseLayer();
@@ -662,8 +618,7 @@ public void moveDeviceRight() {
       createInst2Layer();
       createShiftLayer();
       createInst3Layer();
-      createDeviceMoveLayer();
-      createTrackMoveLayer();
+
       createBrowserLayer();
 
       // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
@@ -946,6 +901,8 @@ public void moveDeviceRight() {
       mEditLayer.bindPressed(m4Button,() ->{moveDeviceLeft();});
       mEditLayer.bindPressed(m5Button,() ->{moveDeviceRight();});
 
+      mEditLayer.bindPressed(m2Button,() ->{moveTrackUp();});
+      mEditLayer.bindPressed(m3Button,() ->{moveTrackDown();});
       //this works, but puts the track "above" the cursor track. We want one below if possible.
       //mEditLayer.bindPressed(m1Button, () -> {mApplication.createAudioTrack(mCursorTrack.position().get());});
       // math works, just add one to the position. :)
@@ -976,25 +933,7 @@ public void moveDeviceRight() {
   
    }
   
-   private void createDeviceMoveLayer()
-   {
-      getHost().println("DeviceMove Layer activated");
-   //Encoder 9
-   final HardwareActionBindable inc = getHost().createAction(() ->  moveDeviceRight(),  () -> "+");;
-   final HardwareActionBindable dec = getHost().createAction(() -> moveDeviceLeft(),  () -> "-");
-   mDeviceMoveLayer.bind(mEncoders[8], getHost().createRelativeHardwareControlStepTarget(inc, dec));
 
-   }
-
-   private void createTrackMoveLayer()
-   {
-      getHost().println("TrackMove Layer activated");
-   //Encoder 9
-   final HardwareActionBindable inc = getHost().createAction(() ->  moveTrack(1.0),  () -> "+");;
-   final HardwareActionBindable dec = getHost().createAction(() -> moveTrack(-1.0),  () -> "-");
-   mTrackMoveLayer.bind(mEncoders[8], getHost().createRelativeHardwareControlStepTarget(inc, dec));
-
-   }
   
  private void createBrowserLayer()
    {
@@ -1294,22 +1233,13 @@ public void moveDeviceRight() {
    @Override
    public void flush()
    {
-     // int position = mCursorDevice.position().get();
-      //if (position != -1){
-        // mCDLDBnk.cursorIndex().set(1);
-      //}
-      //getHost().println();
-     
+
       //this.transportHandler.updateLED ();
       //this turns on the lights (apparently) by sending the 127 to the relevant CC mapped to the button in the Hardware..whatever, it works. :)
       mHardwareSurface.updateHardware();
       updateDisplay();
       //updateSends();
-      //following works to confirm that the Enc9 Layer is active when the toggle button in Inst3 is activated. 
-      // if (mDeviceMoveLayer.isActive())
-      // {
-      //    getHost().println("Enc9 Layer active");
-      // }
+      
       //for testing the calling of devices from the device bank. This is not working, and holds up the move and re-orientation after delete functions
       String mcdname = mCursorDevice.name().get();
       getHost().println("Cursor Device is: "+mcdname);
@@ -1321,24 +1251,14 @@ public void moveDeviceRight() {
       getHost().println("device"+i+" name is "+devname);
       }
 
-      if (mTrackMoveLayer.isActive())
-      {
+      String  mctname = mCursorTrack.name().get();
+      getHost().println("Cursor Track is: "+mctname);
       for (int i = 0; i < mTrackBank.getSizeOfBank(); i++) {
 
          Track track = mTrackBank.getItemAt(i);
       String  trackname = track.name().get();
-      getHost().println("track "+i+" name is "+trackname);
-         //name is not working, so checking if I can get anything else from the trackbank
-      // String  trackx = track.toString();
-      // getHost().println("track "+i+" X is "+trackx);
-      // Boolean  tracky = track.isGroup().get();
-      // getHost().println("track "+i+" is group track is "+tracky);
-      int  trackz = track.position().get();
-      getHost().println("track "+i+" position is "+trackz);
+      getHost().println("Track"+i+" name is "+trackname);
       }
-
-      }
-  
 
    }
 
@@ -1406,7 +1326,7 @@ public void moveDeviceRight() {
      }
   };
 
-private Layer mBaseLayer, mInstLayer, mSongLayer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mDeviceMoveLayer, mTrackMoveLayer, mBrowserLayer;
+private Layer mBaseLayer, mInstLayer, mSongLayer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer;
 
 
 }
