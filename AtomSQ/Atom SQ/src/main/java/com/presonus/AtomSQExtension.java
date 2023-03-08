@@ -1,5 +1,9 @@
 package com.presonus;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.jar.Attributes.Name;
+
 import com.bitwig.extension.api.Color;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 //import com.bitwig.extension.callback.ShortMidiMessageReceivedCallback;
@@ -9,6 +13,7 @@ import com.bitwig.extension.controller.api.Application;
 import com.bitwig.extension.controller.api.CursorDevice;
 import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.CursorBrowserFilterItem;
+import com.bitwig.extension.controller.api.CursorBrowserResultItem;
 import com.bitwig.extension.controller.api.CursorDeviceFollowMode;
 import com.bitwig.extension.controller.api.CursorRemoteControlsPage;
 import com.bitwig.extension.controller.api.CursorTrack;
@@ -112,9 +117,18 @@ public class AtomSQExtension extends ControllerExtension
    private  DeviceBank mCDLDBnk;
    private TrackBank mTrackBank;
    private PopupBrowser mPopupBrowser;
-   private BrowserResultsItem mBrowserResult;
-   private BrowserFilterItem mBrowserCategory;
-   private BrowserFilterItem mBrowserCreator;
+   //in the original script these were not Cursor versions. changed to allow scrolling with select actions.
+   // private BrowserResultsItem mBrowserResult;
+   // private BrowserFilterItem mBrowserCategory;
+   // private BrowserFilterItem mBrowserCreator;
+   private CursorBrowserResultItem mBrowserResult;
+   private CursorBrowserFilterItem mBrowserCategory;
+   private CursorBrowserFilterItem mBrowserCreator;
+
+  //private HardwareActionBindable dec2;
+  //private HardwareActionBindable inc2;
+
+
 
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
    {
@@ -187,9 +201,24 @@ public class AtomSQExtension extends ControllerExtension
       mPopupBrowser.exists().markInterested();
       mPopupBrowser.selectedContentTypeIndex().markInterested();
 
-      mBrowserResult = mPopupBrowser.resultsColumn().createCursorItem();
-      mBrowserCategory = mPopupBrowser.categoryColumn().createCursorItem();
-      mBrowserCreator = mPopupBrowser.creatorColumn().createCursorItem();
+      // mBrowserResult = mPopupBrowser.resultsColumn().createCursorItem();
+      // mBrowserCategory = mPopupBrowser.categoryColumn().createCursorItem();
+      // mBrowserCreator = mPopupBrowser.creatorColumn().createCursorItem();
+      //not sure what the paranthetical bit does here, is this casting? took from the Browserlayer.java file from minilab3. otherwise these are not cursor items, and therefore not actionable
+      mBrowserResult = (CursorBrowserResultItem) mPopupBrowser.resultsColumn().createCursorItem();
+
+      mBrowserCategory =(CursorBrowserFilterItem) mPopupBrowser.categoryColumn().createCursorItem();
+      mBrowserCreator = (CursorBrowserFilterItem) mPopupBrowser.creatorColumn().createCursorItem();
+
+      //inc2 = getHost().createAction(() ->  mBrowserResult.selectPreviousAction(),  () -> "+");
+      //dec2 = getHost().createAction(() -> mBrowserResult.selectPreviousAction(),  () -> "-");
+
+      mBrowserResult.selectNextAction();
+      mBrowserResult.hasNext().markInterested();
+      mBrowserResult.hasPrevious().markInterested();
+      mBrowserResult.exists().markInterested();
+      mBrowserCategory.exists().markInterested();
+      mBrowserCreator.exists().markInterested();
       mBrowserResult.name().markInterested();
       mBrowserCategory.name().markInterested();
       mBrowserCreator.name().markInterested();
@@ -315,7 +344,10 @@ public class AtomSQExtension extends ControllerExtension
 
       mPopupBrowser.exists().addValueObserver(exists -> {
          if (exists)
+         {
             mBrowserLayer.activate();
+            BrowserMode();
+         } 
          else
             mBrowserLayer.deactivate();
       });
@@ -543,6 +575,23 @@ public class AtomSQExtension extends ControllerExtension
       };
      
     }  
+
+    private void changeBrowserSelection (final Boolean boolean1)
+   {
+      //this has to be abstracted, cannot set the start position directly int he binding. It returns an error about void.
+      if (boolean1)
+      {
+         mBrowserResult.selectNextAction();
+         //getHost().println("match must be true");
+      }
+      else if (!boolean1)
+      {
+         //getHost().println("match must be false");
+         mBrowserResult.selectPreviousAction();
+      }
+
+    }  
+
 
    public void moveDeviceLeft() {
       final Device previousDevice = mCDLDBnk.getDevice(0);
@@ -843,10 +892,12 @@ public class AtomSQExtension extends ControllerExtension
       mInstLayer.bindToggle(m1Button, mCursorDevice.isEnabled(), mCursorDevice.isEnabled() );
       mInstLayer.bindToggle(m2Button, mCursorDevice.isWindowOpen(), mCursorDevice.isWindowOpen());
       mInstLayer.bindToggle(m3Button, mCursorDevice.isExpanded(), mCursorDevice.isExpanded());
-      mInstLayer.bindToggle(m4Button,mCursorDevice.isRemoteControlsSectionVisible(), mCursorDevice.isRemoteControlsSectionVisible());
+      mInstLayer.bindToggle(m4Button, mCursorDevice.isRemoteControlsSectionVisible(), mCursorDevice.isRemoteControlsSectionVisible());
+      mInstLayer.bindPressed(m5Button, () ->{moveDeviceLeft();});
+      mInstLayer.bindPressed(m6Button, () ->{moveDeviceRight();});
       //B5 reserved for showing modulators
       //mInstLayer.bindToggle(m5Button, );
-      mInstLayer.bindPressed(m6Button, () -> {startPresetBrowsing();});
+      
         
       //Encoders
       for (int i = 0; i < 8; i++)
@@ -869,6 +920,7 @@ public class AtomSQExtension extends ControllerExtension
       mInst2Layer.bindPressed(m2Button, () -> {mApplication.focusPanelBelow(); mApplication.duplicate();});
       mInst2Layer.bindPressed(m3Button, () -> {mApplication.focusPanelBelow(); mCursorDevice.deleteObject();});
       mInst2Layer.bindPressed(m4Button, () -> {mCursorDevice.beforeDeviceInsertionPoint().browse();});
+      mInst2Layer.bindPressed(m5Button, () -> {startPresetBrowsing();});
       mInst2Layer.bindPressed(m6Button, () -> {mCursorDevice.afterDeviceInsertionPoint().browse();});
    }
 
@@ -946,7 +998,7 @@ public class AtomSQExtension extends ControllerExtension
    {
       //to call this layer, use " layer.bindPressed(m6Button, () -> {startPresetBrowsing();});"
       // this works with the method directly below, at least for devices.
-      final Layer layer = mBrowserLayer;
+      //final Layer layer = mBrowserLayer;
       // layer.bindPressed(ButtonId.SELECT_MULTI, mPopupBrowser::cancel);
       // layer.bind(WHITE, ButtonId.SELECT_MULTI);
 
@@ -959,17 +1011,36 @@ public class AtomSQExtension extends ControllerExtension
       //    layer.bind(ORANGE, selectId);
       // }
 
-      final CursorBrowserFilterItem categories = (CursorBrowserFilterItem)mPopupBrowser.categoryColumn()
-         .createCursorItem();
-      final CursorBrowserFilterItem creators = (CursorBrowserFilterItem)mPopupBrowser.creatorColumn()
-         .createCursorItem();
+      //final CursorBrowserFilterItem categories = (CursorBrowserFilterItem)mPopupBrowser.categoryColumn()
+        // .createCursorItem();
+      //final CursorBrowserFilterItem creators = (CursorBrowserFilterItem)mPopupBrowser.creatorColumn()
+       //  .createCursorItem();
 
-      layer.bindPressed(m1Button, categories.selectPreviousAction());
-      // layer.bind(GREEN, ButtonId.SELECT5);
+      // mBrowserLayer.bindPressed(m5Button, categories.selectPreviousAction());
+      //final CursorBrowserResultItem mResult = (CursorBrowserResultItem)mPopupBrowser.categoryColumn().createCursorItem();
 
-      layer.bindPressed(m4Button, categories.selectNextAction());
-      // layer.bind(GREEN, ButtonId.SELECT6);
+      // mBrowserLayer.bindPressed(m6Button, categories.selectNextAction());
+      //mBrowserLayer.bind(mEncoders[8], mBrowserResult );
+      //Boolean boolean1 = null;
 
+      final HardwareActionBindable inc5 = getHost().createAction(() ->  mBrowserCategory.selectNext(),  () -> "+");
+      final HardwareActionBindable dec5 = getHost().createAction(() -> mBrowserCategory.selectPrevious(),  () -> "-");
+      mBrowserLayer.bind(mEncoders[5], getHost().createRelativeHardwareControlStepTarget(inc5, dec5));
+
+      final HardwareActionBindable inc6 = getHost().createAction(() ->  mBrowserCreator.selectNext(),  () -> "+");
+      final HardwareActionBindable dec6 = getHost().createAction(() -> mBrowserCreator.selectPrevious(),  () -> "-");
+      mBrowserLayer.bind(mEncoders[6], getHost().createRelativeHardwareControlStepTarget(inc6, dec6));
+
+      final HardwareActionBindable inc7 = getHost().createAction(() ->  mBrowserResult.selectNext(),  () -> "+");
+      final HardwareActionBindable dec7 = getHost().createAction(() -> mBrowserResult.selectPrevious(),  () -> "-");
+      mBrowserLayer.bind(mEncoders[7], getHost().createRelativeHardwareControlStepTarget(inc7, dec7));
+
+
+
+
+      
+      mBrowserLayer.bindPressed(m5Button, mPopupBrowser.cancelAction());
+      mBrowserLayer.bindPressed(m6Button, mPopupBrowser.commitAction());
      
 
       // layer.bindPressed(ButtonId.SELECT7, creators.selectPreviousAction());
@@ -1117,7 +1188,7 @@ public class AtomSQExtension extends ControllerExtension
       mMidiOut.sendSysex("F0000106221400F7");
      
       //button titles
-      String[] mTitles= {"Enabled", "Wndw", "Expand", "RCtrls", "", "Presets"};
+      String[] mTitles= {"Enabled", "Wndw", "Expand", "RCtrls", "Move Left", "Move Right"};
 
       for (int i = 0; i < 6; i++) 
       {
@@ -1147,7 +1218,7 @@ public class AtomSQExtension extends ControllerExtension
       //button titles
       //temporarily removing the bits that do not yet work yet
       //String[] mTitles= {"Source", "Dest", "MonMode", "Expand", "Macro", "Controls"};
-      String[] mTitles= {"", "Copy", "Delete", "<New", "", "New>"};
+      String[] mTitles= {"", "Copy", "Delete", "<New", "Preset", "New>"};
       //Track: source, monitor, group?, group expand, destination
       //Device: presets? chain, createDeviceBrowser, isExpanded, isMacroSelectionVisible, isRemoteControlsSectionVisible()
       
@@ -1243,6 +1314,42 @@ public class AtomSQExtension extends ControllerExtension
      mMidiOut.sendSysex("F0000106221301F7");
    }
 
+   private void BrowserMode ()
+   {
+      //getHost().println("EditMode");
+      getHost().showPopupNotification("Browser");
+
+              //lights on buttons
+              mMidiOut.sendMidi(176, CC_SONG, 00);
+              mMidiOut.sendMidi(176, CC_INST, 00);
+              mMidiOut.sendMidi(176, CC_EDIT, 00);
+              mMidiOut.sendMidi(176, CC_USER, 00);
+
+
+      mMidiOut.sendSysex("F0000106221300F7");
+      mMidiOut.sendSysex("F0000106221400F7");
+
+      //button titles
+      String[] mTitles= {"1", "2", "3", "Preview", "Cancel", "OK"};
+      
+      for (int i = 0; i < 6; i++) 
+      {
+        final String msg = mTitles[i];
+         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.magenta).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         mMidiOut.sendSysex(sysex);
+      }
+
+       //line 1
+       mMidiOut.sendSysex("F0 00 01 06 22 12 06 00 5B 5B 00 F7");
+
+//   //Main line 1 
+//   String pLayout = mApplication.panelLayout().get();
+//   byte[] sysex2 = sB.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString(pLayout, pLayout.length()).terminate();
+//      mMidiOut.sendSysex(sysex2);
+
+     mMidiOut.sendSysex("F0000106221301F7");
+   }
+
      ////////////////////////
     //  Standard Methods  //
    ////////////////////////
@@ -1263,6 +1370,16 @@ public class AtomSQExtension extends ControllerExtension
       updateDisplay();
       //updateSends();
       
+      // String activelayers = mLayers.getActiveBindings().toString();
+      // getHost().println(activelayers);
+
+
+      // for (int i = 0; i < mLayers.getLayers().size(); i++) {
+      //    mLayers.getLayers()
+      //    String name = mLayers [i].getName();
+      //    String active = Boolean.toString(layer.isActive());
+      //    getHost().println("Layer "+name+" is active: "+active);
+      // }
       // //for testing the calling of devices from the device bank.
       // String mcdname = mCursorDevice.name().get();
       // getHost().println("Cursor Device is: "+mcdname);
