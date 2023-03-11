@@ -1,5 +1,6 @@
 package com.presonus;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.Attributes.Name;
@@ -41,7 +42,7 @@ import com.bitwig.extension.controller.api.Device;
 import com.bitwig.extension.controller.api.PopupBrowser;
 import com.bitwig.extension.controller.api.BrowserFilterItem;
 import com.bitwig.extension.controller.api.BrowserResultsItem;
-
+import com.bitwig.extensions.framework.Binding;
 //these are not in the regular APIs...they come from the Bitwig repo though. 
 import com.bitwig.extensions.framework.Layer;
 import com.bitwig.extensions.framework.Layers;
@@ -125,8 +126,16 @@ public class AtomSQExtension extends ControllerExtension
    private CursorBrowserFilterItem mBrowserCategory;
    private CursorBrowserFilterItem mBrowserCreator;
 
+
+   private Object mLastMode;
   //private HardwareActionBindable dec2;
   //private HardwareActionBindable inc2;
+  //private Layer mLastLayer;
+//   private List<Layer> mActiveLayers;
+//    private List<Layer> mLayerList;
+//    private int mLayersCount;
+
+
 
 
 
@@ -339,9 +348,12 @@ public class AtomSQExtension extends ControllerExtension
       InstMode();
       //mCursorTrack.selectParent();
       //mCursorTrack.selectInMixer();
+      //mApplication.focusPanelAbove();
       mApplication.selectFirst();
       //mTrackBank.getItemAt(0);
-
+      
+      
+    
       mPopupBrowser.exists().addValueObserver(exists -> {
          if (exists)
          {
@@ -350,9 +362,11 @@ public class AtomSQExtension extends ControllerExtension
          } 
          else
             mBrowserLayer.deactivate();
+            //this works, but is redundant. Need the mode, not the layer now.
+            //mLastLayer.activate();
       });
 
-      
+
 
       //Notifications      
       host.showPopupNotification("Atom SQ Initialized");
@@ -642,9 +656,9 @@ public class AtomSQExtension extends ControllerExtension
       mSongLayer = createLayer("Song");
       mSong2Layer = createLayer("Song2");
 
-      mInstLayer = createLayer("Instrument");
+      mInstLayer = createLayer("Inst");
       mInst2Layer = createLayer ("Inst2");
-      mInst3Layer = createLayer ("Inst3");
+      //mInst3Layer = createLayer ("Inst3");
       mEditLayer = createLayer ("Edit");
       mUserLayer = createLayer("User");
 
@@ -658,7 +672,7 @@ public class AtomSQExtension extends ControllerExtension
       createUserLayer();
       createInst2Layer();
       createShiftLayer();
-      createInst3Layer();
+      //createInst3Layer();
       createSong2Layer();
       createBrowserLayer();
 
@@ -670,6 +684,45 @@ public class AtomSQExtension extends ControllerExtension
       //helper function referenced in initLayers. Saves some typing
       return new Layer(mLayers, name);
    }
+
+   private void activateLayer(final Layer layer){
+         //getHost().println("booyah");
+         //Layer blayer = layer;
+         final String layername = layer.getName().toString();
+
+         for (Layer sts : mActiveLayers)
+         {
+            String stsname = sts.getName().toString();
+          getHost().println("layer to evaluate: "+stsname);
+          //want to move the last layer out of flush so it can indicate the previous layer in activateLayer()
+           if (stsname != "Browser" || stsname != "Shift"|| stsname != "Base"){ 
+            mLastLayer = sts;
+            getHost().println("activateLayer previous layer is: "+mLastLayer.getName().toString());
+         }
+       }
+      // blayer.activate();
+      //for all layers except Base, deactivate
+      for(Layer alayer: mLayerList){
+         
+      // String alayername = alayer.getName().toString();
+         //getHost().println("iteration layer is: "+alayername);
+         if (alayer == mBaseLayer){continue;}
+         else if (alayer == mShiftLayer){continue;}
+         else if (alayer == layer){alayer.activate();}
+         else {alayer.deactivate();}
+      }
+      //activate given layer
+      //layer.activate();
+      //activate given mode
+      String mode = layername + "mode";
+      getHost().println(mode);
+
+
+
+      //write mode to LastMode
+
+      }
+
 
    private void createBaseLayer()
    {
@@ -734,40 +787,48 @@ public class AtomSQExtension extends ControllerExtension
    
       //Menu Buttons
       mBaseLayer.bindPressed(mSongButton, () -> {
-         mInstLayer.deactivate();
-         mUserLayer.deactivate();
-         mEditLayer.deactivate();
-         mInst2Layer.deactivate();
-         mSongLayer.activate();
+         // mInstLayer.deactivate();
+         // mUserLayer.deactivate();
+         // mEditLayer.deactivate();
+         // mSong2Layer.deactivate();
+         // mInst2Layer.deactivate();
+         // mSongLayer.activate();
+         activateLayer(mSongLayer);
          SongMode(); 
          });
       //cannot add a light action to ta bindPressed. would be ", mSongLayer.isActive().get()" at the end. Need to figure somethinge else out. 
       // mTransport.isPlaying() works here, if the songlayer has been pressed. odd.
 
       mBaseLayer.bindPressed(mInstButton, () -> {
-         mUserLayer.deactivate();
-         mEditLayer.deactivate();
-         mSongLayer.deactivate();
-         mInst2Layer.deactivate();
-         mInstLayer.activate();
+         // mUserLayer.deactivate();
+         // mEditLayer.deactivate();
+         // mSongLayer.deactivate();
+         // mSong2Layer.deactivate();
+         // mInst2Layer.deactivate();
+         // mInstLayer.activate();
+         activateLayer(mInstLayer);
          InstMode();
          });
 
       mBaseLayer.bindPressed(mEditorButton, () -> {
-         mInstLayer.deactivate();
-         mUserLayer.deactivate();
-         mSongLayer.deactivate();
-         mInst2Layer.deactivate();
-         mEditLayer.activate();
+         // mInstLayer.deactivate();
+         // mUserLayer.deactivate();
+         // mSongLayer.deactivate();
+         // mSong2Layer.deactivate();
+         // mInst2Layer.deactivate();
+         // mEditLayer.activate();
+         activateLayer(mEditLayer);
          EditMode();
          });
 
       mBaseLayer.bindPressed(mUserButton, () -> {
-         mInstLayer.deactivate();
-         mEditLayer.deactivate();
-         mSongLayer.deactivate();
-         mInst2Layer.deactivate();
-         mUserLayer.activate();
+         // mInstLayer.deactivate();
+         // mEditLayer.deactivate();
+         // mSongLayer.deactivate();
+         // mSong2Layer.deactivate();
+         // mInst2Layer.deactivate();
+         // mUserLayer.activate();
+         activateLayer(mUserLayer);
          UserMode();
          });
       
@@ -1363,23 +1424,45 @@ public class AtomSQExtension extends ControllerExtension
    @Override
    public void flush()
    {
-
+      getHost().println("FLUSH INFO:");
       //this.transportHandler.updateLED ();
       //this turns on the lights (apparently) by sending the 127 to the relevant CC mapped to the button in the Hardware..whatever, it works. :)
       mHardwareSurface.updateHardware();
       updateDisplay();
       //updateSends();
       
-      // String activelayers = mLayers.getActiveBindings().toString();
-      // getHost().println(activelayers);
-
-
-      // for (int i = 0; i < mLayers.getLayers().size(); i++) {
-      //    mLayers.getLayers()
-      //    String name = mLayers [i].getName();
-      //    String active = Boolean.toString(layer.isActive());
-      //    getHost().println("Layer "+name+" is active: "+active);
-      // }
+   
+     // Layer Info
+     //when defining this variable here, it does not double, like when it is defined at a higher scope. Need to do that however to use this elsewhere...
+     // List<Layer> mActiveLayers = new ArrayList<>();
+     //instead, will wipe the array each time:
+     mActiveLayers.clear();
+      int mLayersCount = mLayers.getLayers().size();
+      getHost().println("Initialized layer count: "+ Integer.toString (mLayersCount));
+      //List<Layer> mLayerList = mLayers.getLayers();
+      for ( Layer str : mLayerList ) {
+        String active = Boolean.toString(str.isActive());
+         getHost().println("Layer:  "+str.getName().toString()+" is active: " +active);
+        // getHost().println(active);
+      if (str.isActive()) {mActiveLayers.add(str);}
+     }
+     //this works too! uses the list of layers above, and that is defined at the very top.
+     getHost().println("***These are the active layers:***");
+     for (Layer sts : mActiveLayers)
+     {
+      getHost().println(sts.getName().toString());
+      //want to move the last layer out of flush so it can indicate the previous layer in activateLayer()
+       if (sts.getName() != "Browser")
+         {
+         mLastLayer = sts;
+         }
+   }
+   
+   getHost().println("Last Layer is: "+ mLastLayer.getName().toString());
+     
+     
+      
+      
       // //for testing the calling of devices from the device bank.
       // String mcdname = mCursorDevice.name().get();
       // getHost().println("Cursor Device is: "+mcdname);
@@ -1388,6 +1471,7 @@ public class AtomSQExtension extends ControllerExtension
       //    String  devname = device.name().get();
       //    getHost().println("device"+i+" name is "+devname);
       // }
+
       // //to review track bank
       // String  mctname = mCursorTrack.name().get();
       // getHost().println("Cursor Track is: "+mctname);
@@ -1450,5 +1534,10 @@ public class AtomSQExtension extends ControllerExtension
   };
 
 private Layer mBaseLayer, mInstLayer, mSongLayer, mSong2Layer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer;
+
+private Layer mLastLayer = mBaseLayer;
+//final int mLayersCount = mLayers.getLayers().size();
+final List<Layer> mLayerList = mLayers.getLayers();
+final List<Layer> mActiveLayers = new ArrayList<>();
 
 }
