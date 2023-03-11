@@ -1,5 +1,6 @@
 package com.presonus;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +50,7 @@ import com.bitwig.extensions.framework.Layers;
 
 //my packages
 import com.presonus.handler.SysexHandler;
-
+import com.presonus.handler.DisplayMode;
 public class AtomSQExtension extends ControllerExtension
 {
 
@@ -108,12 +109,13 @@ public class AtomSQExtension extends ControllerExtension
    private static final Color GREEN = Color.fromRGB(0, 1, 0);
    private static final Color ORANGE = Color.fromRGB(1, 1, 0);
    private static final Color BLUE = Color.fromRGB(0, 0, 1);
+   //private static final ControllerHost mHost = null;
 
 
    private  SysexHandler sH = new SysexHandler();
    // private SysexBuilder sB = new SysexBuilder();
-   private CursorDevice mCursorDevice;
-   private CursorTrack mCursorTrack;
+   public CursorDevice mCursorDevice;
+   public CursorTrack mCursorTrack;
    //private CursorDeviceLayer  mCDL; 
    private  DeviceBank mCDLDBnk;
    private TrackBank mTrackBank;
@@ -125,9 +127,9 @@ public class AtomSQExtension extends ControllerExtension
    private CursorBrowserResultItem mBrowserResult;
    private CursorBrowserFilterItem mBrowserCategory;
    private CursorBrowserFilterItem mBrowserCreator;
-
-
-   private Object mLastMode;
+   private DisplayMode DM;
+   public ControllerHost mHost;
+   //private Object mLastMode;
   //private HardwareActionBindable dec2;
   //private HardwareActionBindable inc2;
   //private Layer mLastLayer;
@@ -142,6 +144,8 @@ public class AtomSQExtension extends ControllerExtension
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
    {
       super(definition, host);
+
+
    }
 
    @Override
@@ -151,6 +155,9 @@ public class AtomSQExtension extends ControllerExtension
   //changed from pinnable cursor device
 
       final ControllerHost host = getHost();
+      DM = new DisplayMode();
+     
+      //DisplayMode.initializeDisplayMode(mApplication, mCursorTrack, mCursorDevice, host);
       //added final here in testing for method in sysexhandler...might break something.
       mApplication = host.createApplication();
       mApplication.panelLayout().markInterested();
@@ -291,49 +298,7 @@ public class AtomSQExtension extends ControllerExtension
       mTransport.playStartPosition().markInterested();
       mTransport.playPositionInSeconds().markInterested();
 
-      //the HW init
-      mMidiOut.sendMidi(176,29,00);
-      mMidiOut.sendMidi(176,15,00);
-      mMidiOut.sendMidi(176,16,00);
-      mMidiOut.sendMidi(176,17,00);
-      mMidiOut.sendMidi(176,18,00);
-      mMidiOut.sendMidi(176,19,00);
-      mMidiOut.sendMidi(176,20,00);
-      mMidiOut.sendMidi(176,21,00);
-      mMidiOut.sendMidi(143,00,00);
-
-      mMidiOut.sendMidi(176,29,00);
-      mMidiOut.sendMidi(176,15,00);
-      mMidiOut.sendMidi(176,16,00);
-      mMidiOut.sendMidi(176,17,00);
-      mMidiOut.sendMidi(176,18,00);
-      mMidiOut.sendMidi(176,19,00);
-      mMidiOut.sendMidi(176,20,00);
-      mMidiOut.sendMidi(176,21,00);
-      mMidiOut.sendMidi(143,00,00);
-
-      mMidiOut.sendMidi(176,29,00);
-      mMidiOut.sendMidi(176,15,00);
-      mMidiOut.sendMidi(176,16,00);
-      mMidiOut.sendMidi(176,17,00);
-      mMidiOut.sendMidi(176,18,00);
-      mMidiOut.sendMidi(176,19,00);
-      mMidiOut.sendMidi(176,20,00);
-      mMidiOut.sendMidi(176,21,00);
-      mMidiOut.sendMidi(143,00,00);
-
-      mMidiOut.sendSysex("F07E7F0601F7");
-      mMidiOut.sendSysex("F07E7F0601F7");
-      mMidiOut.sendSysex("F07E7F0601F7");
-      //Live Mode handshake
-      mMidiOut.sendMidi(143,00,01);
-      //this line alone turns on the lights (paste in the console)
-      mMidiOut.sendSysex("F0000106221300F7");
-      //this line alone makes the Inst menu at least come back to life!
-      //it also takes command of the nav keys on the right...if set to 0, the display still shows and navigates, but thie keys ALSO send midi messages
-      // this.portOut.sendSysex("F0000106221401F7");
-      mMidiOut.sendSysex("F0000106221301F7");
-         
+      
 
       //API Hardware surface
       createHardwareSurface();
@@ -342,6 +307,7 @@ public class AtomSQExtension extends ControllerExtension
       initLayers();
       mBaseLayer.activate();
       mInstLayer.activate();
+      mLastLayer = mInstLayer;
       //this and initializing the InstMode below mimic what happens when the Inst button ispressed.
 
       //Modes
@@ -357,17 +323,23 @@ public class AtomSQExtension extends ControllerExtension
       mPopupBrowser.exists().addValueObserver(exists -> {
          if (exists)
          {
-            mBrowserLayer.activate();
+            //mBrowserLayer.activate();
+            activateLayer(mBrowserLayer);
             BrowserMode();
          } 
-         else
+         else{
             mBrowserLayer.deactivate();
+            activateLayer(mLastLayer);
+         }
+            
             //this works, but is redundant. Need the mode, not the layer now.
             //mLastLayer.activate();
       });
 
-
-
+      //these HAVE to stay at the bottom! this does allow the package file to use "this" to access the variable tho!
+      DM.init(this);
+      DM.initHW();
+      
       //Notifications      
       host.showPopupNotification("Atom SQ Initialized");
    }
@@ -685,41 +657,67 @@ public class AtomSQExtension extends ControllerExtension
       return new Layer(mLayers, name);
    }
 
-   private void activateLayer(final Layer layer){
-         //getHost().println("booyah");
+   private void activateLayer(final Layer layer) //throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException
+   {
+      
          //Layer blayer = layer;
          final String layername = layer.getName().toString();
-
+         getHost().println("requested layer to activate: "+layername);
          for (Layer sts : mActiveLayers)
          {
             String stsname = sts.getName().toString();
           getHost().println("layer to evaluate: "+stsname);
           //want to move the last layer out of flush so it can indicate the previous layer in activateLayer()
-           if (stsname != "Browser" || stsname != "Shift"|| stsname != "Base"){ 
-            mLastLayer = sts;
-            getHost().println("activateLayer previous layer is: "+mLastLayer.getName().toString());
+           if (stsname == "Browser"){break;} 
+           else if (stsname == "Shift") {break;} 
+           else if (stsname == "Base") {break;} 
+            else {mLastLayer = sts;}
          }
-       }
+       
+       getHost().println("previous layer is: "+mLastLayer.getName().toString());
       // blayer.activate();
       //for all layers except Base, deactivate
       for(Layer alayer: mLayerList){
          
-      // String alayername = alayer.getName().toString();
+      String alayername = alayer.getName().toString();
          //getHost().println("iteration layer is: "+alayername);
          if (alayer == mBaseLayer){continue;}
          else if (alayer == mShiftLayer){continue;}
-         else if (alayer == layer){alayer.activate();}
+         else if (alayer == layer){
+            getHost().println("activating layer: "+alayername);
+            alayer.activate();}
          else {alayer.deactivate();}
       }
       //activate given layer
       //layer.activate();
       //activate given mode
-      String mode = layername + "mode";
-      getHost().println(mode);
+//the class is AtomSQExtenion
+//method is the Xmode()
 
 
+//crazy shit using exceptions, makes the whole code a mess. there should be a simpler way, even if it is more manual work.
+// AtomSQExtension obj =  this;
+//    String mode = layername + "mode";
+//    Class<?> clazz = obj.getClass();
+//    Method method1 = null;
+  
+//    try {
+//        method1 = clazz.getMethod(mode);
+//    } catch (NoSuchMethodException e) {
+//       // TODO Auto-generated catch block
+//       e.printStackTrace();
+//    } catch (SecurityException e) {
+//       // TODO Auto-generated catch block
+//       e.printStackTrace();
+//    }
+    
+//    try {
+//       method1.invoke(obj);
+//    } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+//       // TODO Auto-generated catch block
+//       e.printStackTrace();
+//    }
 
-      //write mode to LastMode
 
       }
 
@@ -1155,11 +1153,13 @@ public class AtomSQExtension extends ControllerExtension
 
    }
 
-   private void SongMode ()
+   //changing private to public for the mode finder bits in the layer change above
+   public void SongMode ()
    {
       //getHost().println("SongMode");
       getHost().showPopupNotification("Tracks");
       mApplication.focusPanelAbove();
+
       //mApplication.setPanelLayout("MIX");
 
       //lights on buttons
@@ -1198,7 +1198,7 @@ public class AtomSQExtension extends ControllerExtension
      mMidiOut.sendSysex("F0000106221301F7");
    }
 
-   private void Song2Mode ()
+   public void Song2Mode ()
    {
       //getHost().println("SongMode");
       getHost().showPopupNotification("Tracks");
@@ -1228,7 +1228,7 @@ public class AtomSQExtension extends ControllerExtension
      mMidiOut.sendSysex("F0000106221301F7");
    }
 
-   private void InstMode ()
+   public void InstMode ()
    {
       getHost().showPopupNotification("Devices");
       mApplication.focusPanelBelow();
@@ -1265,7 +1265,7 @@ public class AtomSQExtension extends ControllerExtension
       mMidiOut.sendSysex("F0000106221301F7");
    }
   
-   private void Inst2Mode ()
+   public void Inst2Mode ()
    {
       //getHost().println("InstMode");
       //getHost().showPopupNotification("Instrument Mode");
@@ -1295,7 +1295,7 @@ public class AtomSQExtension extends ControllerExtension
       mMidiOut.sendSysex("F0000106221301F7");
    }
 
-   private void Inst3Mode ()
+   public void Inst3Mode ()
    {
       //mApplication.setPanelLayout("ARRANGE");
       mMidiOut.sendSysex("F0000106221300F7");
@@ -1322,7 +1322,7 @@ public class AtomSQExtension extends ControllerExtension
       mMidiOut.sendSysex("F0000106221301F7");
    }
 
-   private void EditMode ()
+   public void EditMode ()
    {
       //getHost().println("EditMode");
       getHost().showPopupNotification("Edit Mode");
@@ -1359,7 +1359,7 @@ public class AtomSQExtension extends ControllerExtension
 
    }
 
-   private void UserMode ()
+   public void UserMode ()
    {
       getHost().println("UserMode");
       getHost().showPopupNotification("User Mode");
@@ -1375,7 +1375,7 @@ public class AtomSQExtension extends ControllerExtension
      mMidiOut.sendSysex("F0000106221301F7");
    }
 
-   private void BrowserMode ()
+   public void BrowserMode ()
    {
       //getHost().println("EditMode");
       getHost().showPopupNotification("Browser");
@@ -1428,7 +1428,7 @@ public class AtomSQExtension extends ControllerExtension
       //this.transportHandler.updateLED ();
       //this turns on the lights (apparently) by sending the 127 to the relevant CC mapped to the button in the Hardware..whatever, it works. :)
       mHardwareSurface.updateHardware();
-      updateDisplay();
+      DM.updateDisplay();
       //updateSends();
       
    
@@ -1441,8 +1441,8 @@ public class AtomSQExtension extends ControllerExtension
       getHost().println("Initialized layer count: "+ Integer.toString (mLayersCount));
       //List<Layer> mLayerList = mLayers.getLayers();
       for ( Layer str : mLayerList ) {
-        String active = Boolean.toString(str.isActive());
-         getHost().println("Layer:  "+str.getName().toString()+" is active: " +active);
+       // String active = Boolean.toString(str.isActive());
+        // getHost().println("Layer:  "+str.getName().toString()+" is active: " +active);
         // getHost().println(active);
       if (str.isActive()) {mActiveLayers.add(str);}
      }
@@ -1452,10 +1452,10 @@ public class AtomSQExtension extends ControllerExtension
      {
       getHost().println(sts.getName().toString());
       //want to move the last layer out of flush so it can indicate the previous layer in activateLayer()
-       if (sts.getName() != "Browser")
-         {
-         mLastLayer = sts;
-         }
+      //  if (sts.getName() != "Browser")
+      //    {
+      //    mLastLayer = sts;
+      //    }
    }
    
    getHost().println("Last Layer is: "+ mLastLayer.getName().toString());
@@ -1504,7 +1504,7 @@ public class AtomSQExtension extends ControllerExtension
    private CursorRemoteControlsPage mRemoteControls;
    private Transport mTransport;
    private MidiIn mMidiIn;
-   private MidiOut mMidiOut;
+   public MidiOut mMidiOut;
    //making public to usein SysexHandler. Static too
    private Application mApplication;
    private boolean mShift;
