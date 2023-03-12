@@ -1,18 +1,14 @@
 package com.presonus.handler;
 
+import java.lang.reflect.Method;
+
 import com.bitwig.extension.api.Color;
-import com.bitwig.extension.controller.ControllerExtension;
 import com.bitwig.extension.controller.api.Application;
 import com.bitwig.extension.controller.api.CursorDevice;
-import com.bitwig.extension.controller.api.CursorDeviceFollowMode;
 import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.CursorTrack;
-import com.bitwig.extension.controller.api.Device;
-import com.bitwig.extension.controller.api.DirectParameterValueDisplayObserver;
-import com.bitwig.extension.controller.api.MidiIn;
 import com.bitwig.extension.controller.api.MidiOut;
 import com.bitwig.extension.api.util.midi.SysexBuilder;
-import com.presonus.handler.SysexHandler;
 import com.presonus.AtomSQExtension;
 
 
@@ -84,7 +80,7 @@ public class DisplayMode  {
     
    private CursorDevice dCursorDevice;
    private AtomSQExtension dASQCE;
-
+   public Method dLastMode;
  
     private static Application dApplication;
 
@@ -102,7 +98,8 @@ public class DisplayMode  {
 
     public void updateDisplay ()
     {
-        
+        if(!dASQCE.mBrowserLayer.isActive())
+        {
     //CursorTrack mCursorTrack = track;
        //Main line 1 
        String pTrack = dCursorTrack.name().get();
@@ -116,7 +113,20 @@ public class DisplayMode  {
        String pDev = dCursorDevice.name().get();
        byte[] sysex3 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.white).addByte(sH.spc).addString("Device: ", 8).addString(pDev, pDev.length()).terminate();
           dMidiOut.sendSysex(sysex3);
- 
+        }
+
+        else {
+            String pDev = dCursorDevice.name().get();
+       byte[] sysex3 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("Device: ", 8).addString(pDev, pDev.length()).terminate();
+          dMidiOut.sendSysex(sysex3);
+
+          String pTrack = dASQCE.mBrowserResult.name().get();
+         byte[] sysex2 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.magenta).addByte(sH.spc).addString("Preset: ", 8).addString(pTrack, pTrack.length()).terminate();
+            dMidiOut.sendSysex(sysex2);
+
+
+        }
+
     }
  
     public void initHW(){
@@ -203,10 +213,10 @@ public class DisplayMode  {
        // String pTrack = mCursorTrack.name().get();
        // byte[] sysex3 = sB.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.yellow).addByte(sH.spc).addString(pTrack, pTrack.length()).terminate();
        //    dMidiOut.sendSysex(sysex3);
- 
- 
- 
+
       dMidiOut.sendSysex("F0000106221301F7");
+    
+
     }
  
     public void Song2Mode ()

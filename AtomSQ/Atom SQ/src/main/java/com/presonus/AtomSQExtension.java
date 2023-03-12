@@ -119,12 +119,12 @@ public class AtomSQExtension extends ControllerExtension
    //private CursorDeviceLayer  mCDL; 
    private  DeviceBank mCDLDBnk;
    private TrackBank mTrackBank;
-   private PopupBrowser mPopupBrowser;
+   public PopupBrowser mPopupBrowser;
    //in the original script these were not Cursor versions. changed to allow scrolling with select actions.
    // private BrowserResultsItem mBrowserResult;
    // private BrowserFilterItem mBrowserCategory;
    // private BrowserFilterItem mBrowserCreator;
-   private CursorBrowserResultItem mBrowserResult;
+   public CursorBrowserResultItem mBrowserResult;
    private CursorBrowserFilterItem mBrowserCategory;
    private CursorBrowserFilterItem mBrowserCreator;
    private DisplayMode DM;
@@ -324,12 +324,19 @@ public class AtomSQExtension extends ControllerExtension
          if (exists)
          {
             //mBrowserLayer.activate();
-            activateLayer(mBrowserLayer);
+            activateLayer(mBrowserLayer, null);
             BrowserMode();
          } 
          else{
             mBrowserLayer.deactivate();
-            activateLayer(mLastLayer);
+            activateLayer(mLastLayer, null);
+            //TODO this is ugly and manual, but it should work. I cannot get a good logic to do this.
+            if (mLastLayer == mInstLayer){InstMode();}
+            if (mLastLayer == mInst2Layer){Inst2Mode();}
+            if (mLastLayer == mSongLayer){SongMode();}
+            if (mLastLayer == mSong2Layer){Song2Mode();}
+            if (mLastLayer == mEditLayer){EditMode();}
+            if (mLastLayer == mUserLayer){UserMode();}
          }
             
             //this works, but is redundant. Need the mode, not the layer now.
@@ -339,7 +346,7 @@ public class AtomSQExtension extends ControllerExtension
       //these HAVE to stay at the bottom! this does allow the package file to use "this" to access the variable tho!
       DM.init(this);
       DM.initHW();
-      
+
       //Notifications      
       host.showPopupNotification("Atom SQ Initialized");
    }
@@ -562,24 +569,8 @@ public class AtomSQExtension extends ControllerExtension
      
     }  
 
-    private void changeBrowserSelection (final Boolean boolean1)
+   public void moveDeviceLeft() 
    {
-      //this has to be abstracted, cannot set the start position directly int he binding. It returns an error about void.
-      if (boolean1)
-      {
-         mBrowserResult.selectNextAction();
-         //getHost().println("match must be true");
-      }
-      else if (!boolean1)
-      {
-         //getHost().println("match must be false");
-         mBrowserResult.selectPreviousAction();
-      }
-
-    }  
-
-
-   public void moveDeviceLeft() {
       final Device previousDevice = mCDLDBnk.getDevice(0);
       // String pdn = previousDevice.name().get();
       // getHost().println(pdn);
@@ -588,7 +579,8 @@ public class AtomSQExtension extends ControllerExtension
       mCursorDevice.selectNext();
    }
 
-   public void moveDeviceRight() {
+   public void moveDeviceRight() 
+   {
       final Device nextDevice = mCDLDBnk.getDevice(2);
       // String ndn = nextDevice.name().get();
       // getHost().println(ndn);
@@ -597,7 +589,8 @@ public class AtomSQExtension extends ControllerExtension
       mCursorDevice.selectNext();
    }
 
-   public void moveTrackUp() {
+   public void moveTrackUp() 
+   {
       final Track previousTrack = mTrackBank.getItemAt(0);
       previousTrack.beforeTrackInsertionPoint().moveTracks(mCursorTrack);
       mCursorTrack.selectPrevious();
@@ -605,7 +598,8 @@ public class AtomSQExtension extends ControllerExtension
 
    }
 
-   public void moveTrackDown() {
+   public void moveTrackDown() 
+   {
       final Track nextTrack = mTrackBank.getItemAt(2);
       nextTrack.afterTrackInsertionPoint().moveTracks(mCursorTrack);
       mCursorTrack.selectPrevious();
@@ -613,8 +607,6 @@ public class AtomSQExtension extends ControllerExtension
       
    }
  
-
-
      ////////////////////////
     //       Layers       //
    ////////////////////////
@@ -657,9 +649,9 @@ public class AtomSQExtension extends ControllerExtension
       return new Layer(mLayers, name);
    }
 
-   private void activateLayer(final Layer layer) //throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException
+   private void activateLayer(final Layer layer, final Layer leaveit) //throws NoSuchMethodException, IllegalAccessException, IllegalArgumentException, InvocationTargetException
    {
-      
+      Layer mLeaveIt = leaveit;
          //Layer blayer = layer;
          final String layername = layer.getName().toString();
          getHost().println("requested layer to activate: "+layername);
@@ -668,9 +660,9 @@ public class AtomSQExtension extends ControllerExtension
             String stsname = sts.getName().toString();
           getHost().println("layer to evaluate: "+stsname);
           //want to move the last layer out of flush so it can indicate the previous layer in activateLayer()
-           if (stsname == "Browser"){break;} 
-           else if (stsname == "Shift") {break;} 
-           else if (stsname == "Base") {break;} 
+           if (stsname == "Browser"){continue;} 
+           else if (stsname == "Shift") {continue;} 
+           else if (stsname == "Base") {continue;} 
             else {mLastLayer = sts;}
          }
        
@@ -683,6 +675,7 @@ public class AtomSQExtension extends ControllerExtension
          //getHost().println("iteration layer is: "+alayername);
          if (alayer == mBaseLayer){continue;}
          else if (alayer == mShiftLayer){continue;}
+         else if (alayer == mLeaveIt){continue;}
          else if (alayer == layer){
             getHost().println("activating layer: "+alayername);
             alayer.activate();}
@@ -721,7 +714,6 @@ public class AtomSQExtension extends ControllerExtension
 
       }
 
-
    private void createBaseLayer()
    {
       //Shift
@@ -744,17 +736,20 @@ public class AtomSQExtension extends ControllerExtension
             getHost().showPopupNotification("Undo");
          }
          else if (mInst2Layer.isActive()) {
-            mInst2Layer.deactivate();
-            mInstLayer.activate();
+            // mInst2Layer.deactivate();
+            //mInstLayer.activate();
+            activateLayer(mInstLayer, null);
             InstMode();
          }
-         else if (mInst3Layer.isActive()) {
-            mInst3Layer.deactivate();
-            mInst2Layer.activate();
-            Inst2Mode();
-         }
+         // else if (mInst3Layer.isActive()) {
+         //    //mInst3Layer.deactivate();
+         //    //mInst2Layer.activate();
+         //    activateLayer(mBrowserLayer, mBaseLayer);
+         //    Inst2Mode();
+         // }
          else if (mSong2Layer.isActive()){
-            mSong2Layer.deactivate();
+            //mSong2Layer.deactivate();
+            activateLayer(mSongLayer, null);
             SongMode();
          }
          
@@ -766,18 +761,22 @@ public class AtomSQExtension extends ControllerExtension
          getHost().showPopupNotification("Redo");
          }
          else if (mInstLayer.isActive()) {
-            mInstLayer.deactivate();
-            mInst2Layer.activate();
+           // mInstLayer.deactivate();
+           // mInst2Layer.activate();
+           activateLayer(mInst2Layer, mInstLayer);
             Inst2Mode();
+         
          }
-         else if (mInst2Layer.isActive())
-         {
-            mInst2Layer.deactivate();
-            mInst3Layer.activate();
-            Inst3Mode();
-         }
+         // else if (mInst2Layer.isActive())
+         // {
+         //    //mInst2Layer.deactivate();
+         //   // mInst3Layer.activate();
+         //   activateLayer(mBrowserLayer, mBaseLayer);
+         //    Inst3Mode();
+         //}
          else if (mSongLayer.isActive()){
-            mSong2Layer.activate();
+           // mSong2Layer.activate();
+           activateLayer(mSong2Layer, mSongLayer);
             Song2Mode();
          }
 
@@ -785,48 +784,24 @@ public class AtomSQExtension extends ControllerExtension
    
       //Menu Buttons
       mBaseLayer.bindPressed(mSongButton, () -> {
-         // mInstLayer.deactivate();
-         // mUserLayer.deactivate();
-         // mEditLayer.deactivate();
-         // mSong2Layer.deactivate();
-         // mInst2Layer.deactivate();
-         // mSongLayer.activate();
-         activateLayer(mSongLayer);
+         activateLayer(mSongLayer, null);
          SongMode(); 
          });
       //cannot add a light action to ta bindPressed. would be ", mSongLayer.isActive().get()" at the end. Need to figure somethinge else out. 
       // mTransport.isPlaying() works here, if the songlayer has been pressed. odd.
 
       mBaseLayer.bindPressed(mInstButton, () -> {
-         // mUserLayer.deactivate();
-         // mEditLayer.deactivate();
-         // mSongLayer.deactivate();
-         // mSong2Layer.deactivate();
-         // mInst2Layer.deactivate();
-         // mInstLayer.activate();
-         activateLayer(mInstLayer);
+         activateLayer(mInstLayer, null);
          InstMode();
          });
 
       mBaseLayer.bindPressed(mEditorButton, () -> {
-         // mInstLayer.deactivate();
-         // mUserLayer.deactivate();
-         // mSongLayer.deactivate();
-         // mSong2Layer.deactivate();
-         // mInst2Layer.deactivate();
-         // mEditLayer.activate();
-         activateLayer(mEditLayer);
+         activateLayer(mEditLayer, null);
          EditMode();
          });
 
       mBaseLayer.bindPressed(mUserButton, () -> {
-         // mInstLayer.deactivate();
-         // mEditLayer.deactivate();
-         // mSongLayer.deactivate();
-         // mSong2Layer.deactivate();
-         // mInst2Layer.deactivate();
-         // mUserLayer.activate();
-         activateLayer(mUserLayer);
+         activateLayer(mUserLayer, null);
          UserMode();
          });
       
@@ -903,6 +878,7 @@ public class AtomSQExtension extends ControllerExtension
 
    private void createSongLayer()
    {
+      mSongLayer.bind(() -> true, mForwardButton);
       //notifications
       // getHost().println("SongLayer active");
       // getHost().println("Song");
@@ -932,6 +908,8 @@ public class AtomSQExtension extends ControllerExtension
 
    private void createSong2Layer() {
 
+      mSong2Layer.bind(() -> true, mBackButton);
+      mSong2Layer.bind(() -> false, mForwardButton);
       mSong2Layer.bindToggle(m1Button, mCursorTrack.isActivated());
       mSong2Layer.bindPressed(m2Button, () -> {mApplication.focusPanelAbove(); mApplication.duplicate();});
       mSong2Layer.bindPressed(m3Button, () -> {mApplication.focusPanelAbove(); mCursorTrack.deleteObject();});
@@ -942,6 +920,7 @@ public class AtomSQExtension extends ControllerExtension
 
    private void createInstLayer()
    {
+      mInstLayer.bind(() -> true, mForwardButton);
      // mInstLayer.bind(mEncoders[8], mMasterTrack.volume());
 
       getHost().println("InstLayer active");
@@ -971,6 +950,8 @@ public class AtomSQExtension extends ControllerExtension
 
    private void createInst2Layer()
    {
+      mInst2Layer.bind(() -> true, mBackButton);
+      mInst2Layer.bind(() -> false, mForwardButton);
       //Monitor mode
       //mInst2Layer.bindToggle(m4Button, mCursorDevice.isExpanded(), mCursorDevice.isExpanded()); //expand
       //mInst2Layer.bindToggle(m5Button, mCursorDevice.isRemoteControlsSectionVisible(), mCursorDevice.isRemoteControlsSectionVisible()); //controls
@@ -981,34 +962,6 @@ public class AtomSQExtension extends ControllerExtension
       mInst2Layer.bindPressed(m4Button, () -> {mCursorDevice.beforeDeviceInsertionPoint().browse();});
       mInst2Layer.bindPressed(m5Button, () -> {startPresetBrowsing();});
       mInst2Layer.bindPressed(m6Button, () -> {mCursorDevice.afterDeviceInsertionPoint().browse();});
-   }
-
-   private void createInst3Layer()
-   {
-      //Monitor mode
-      //want to configure the Enc 9 to move either track or device.
-      //TODO change this from toggle to pressed if possible. otherwise both can be on at once, and do not de-toggle unless you leave the menu. Encoder 9
-      //mInst3Layer.bindToggle(m4Button, mDeviceMoveLayer);
-      //mInst3Layer.bindToggle(m1Button, mTrackMoveLayer);
-      //mInst3Layer.bindToggle(m4Button,); 
-      //app duplicate works on the selected item, which is always the track at the moment. If you manually click into the devices, then it deletes a device.
-      //mInst3Layer.bindPressed(m2Button, () -> {mApplication.focusPanelAbove(); mApplication.duplicate();});
-      mInst3Layer.bindPressed(m3Button, () -> {mApplication.focusPanelAbove(); mCursorTrack.deleteObject();});
-      //TODO make a logic statement here that disallows a duplication or deletion if the bottom panel is not selected. pop-up too
-      mInst3Layer.bindPressed(m5Button, () -> {mApplication.focusPanelBelow(); mApplication.duplicate();});
-      mInst3Layer.bindPressed(m6Button, () -> {
-         final Device previousDevice = mCDLDBnk.getDevice(0);
-         String pdn = previousDevice.name().toString();
-         getHost().println(pdn);
-         //final Device nextDevice = mCDLDBnk.getDevice(2);
-         //mApplication.focusPanelBelow(); 
-         //mCursorDevice.selectInEditor();
-        mCursorDevice.deleteObject();
-         //mApplication.focusPanelAbove();
-        // mApplication.focusPanelBelow(); 
-       // mCDLDBnk.scrollBackwards();
-        //mCursorDevice.selectDevice(previousDevice);
-      });
    }
 
    private void createEditLayer()
@@ -1295,33 +1248,6 @@ public class AtomSQExtension extends ControllerExtension
       mMidiOut.sendSysex("F0000106221301F7");
    }
 
-   public void Inst3Mode ()
-   {
-      //mApplication.setPanelLayout("ARRANGE");
-      mMidiOut.sendSysex("F0000106221300F7");
-      mMidiOut.sendSysex("F0000106221400F7");
-     
-      //button titles
-      String[] mTitles= {"", "Duplicate", "Delete", "", "Duplicate", "Delete"};
-      
-      for (int i = 0; i < 3; i++) 
-      {
-         final String msg = mTitles[i];
-         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
-         mMidiOut.sendSysex(sysex);
-      }
-      for (int i = 3; i < 6; i++) 
-      {
-         final String msg = mTitles[i];
-         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
-         mMidiOut.sendSysex(sysex);
-      }
-
-      // Encoder 9...must recenter it? 00 and 127 have no other visible effect.
-      mMidiOut.sendMidi(176, 29, 00);
-      mMidiOut.sendSysex("F0000106221301F7");
-   }
-
    public void EditMode ()
    {
       //getHost().println("EditMode");
@@ -1424,11 +1350,15 @@ public class AtomSQExtension extends ControllerExtension
    @Override
    public void flush()
    {
+      //Flush actions
+      mHardwareSurface.updateHardware();
+      DM.updateDisplay();
+
+      //Flus info
       getHost().println("FLUSH INFO:");
       //this.transportHandler.updateLED ();
       //this turns on the lights (apparently) by sending the 127 to the relevant CC mapped to the button in the Hardware..whatever, it works. :)
-      mHardwareSurface.updateHardware();
-      DM.updateDisplay();
+ 
       //updateSends();
       
    
@@ -1460,9 +1390,6 @@ public class AtomSQExtension extends ControllerExtension
    
    getHost().println("Last Layer is: "+ mLastLayer.getName().toString());
      
-     
-      
-      
       // //for testing the calling of devices from the device bank.
       // String mcdname = mCursorDevice.name().get();
       // getHost().println("Cursor Device is: "+mcdname);
@@ -1533,7 +1460,7 @@ public class AtomSQExtension extends ControllerExtension
      }
   };
 
-private Layer mBaseLayer, mInstLayer, mSongLayer, mSong2Layer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer;
+public Layer mBaseLayer, mInstLayer, mSongLayer, mSong2Layer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer;
 
 private Layer mLastLayer = mBaseLayer;
 //final int mLayersCount = mLayers.getLayers().size();
