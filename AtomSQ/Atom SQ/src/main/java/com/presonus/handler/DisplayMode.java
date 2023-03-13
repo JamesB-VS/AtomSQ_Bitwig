@@ -6,8 +6,10 @@ import com.bitwig.extension.api.Color;
 import com.bitwig.extension.controller.api.Application;
 import com.bitwig.extension.controller.api.CursorDevice;
 import com.bitwig.extension.controller.api.ControllerHost;
+import com.bitwig.extension.controller.api.CursorBrowserResultItem;
 import com.bitwig.extension.controller.api.CursorTrack;
 import com.bitwig.extension.controller.api.MidiOut;
+import com.bitwig.extensions.framework.Layer;
 import com.bitwig.extension.api.util.midi.SysexBuilder;
 import com.presonus.AtomSQExtension;
 
@@ -70,7 +72,6 @@ public class DisplayMode  {
    private static final Color GREEN = Color.fromRGB(0, 1, 0);
    private static final Color ORANGE = Color.fromRGB(1, 1, 0);
    private static final Color BLUE = Color.fromRGB(0, 0, 1);
-   private static final ControllerHost mHost = null;
    
     private static SysexHandler sH = new SysexHandler();
    // private static MidiIn dMidiIn;
@@ -81,24 +82,27 @@ public class DisplayMode  {
    private CursorDevice dCursorDevice;
    private AtomSQExtension dASQCE;
    public Method dLastMode;
- 
-    private static Application dApplication;
+   private Layer dBrowserLayer;
+   public CursorBrowserResultItem dBrowserResult;
+   private Application dApplication;
 
-    public void init(AtomSQExtension Ext){
+    public void start(AtomSQExtension Ext){
       dASQCE = Ext;
       dHost = dASQCE.mHost;
+      //dASQCE.mHost.println("dhost is: "+dHost.getHostProduct().toString());
       dMidiOut = dASQCE.mMidiOut;
-   
-      
+      dBrowserLayer = dASQCE.mBrowserLayer;
+      dApplication = dASQCE.mApplication;
       dCursorTrack = dASQCE.mCursorTrack;
       dCursorDevice = dASQCE.mCursorDevice;
+      dBrowserResult = dASQCE.mBrowserResult;
  
     }
        
 
     public void updateDisplay ()
     {
-        if(!dASQCE.mBrowserLayer.isActive())
+        if(!dBrowserLayer.isActive())
         {
     //CursorTrack mCursorTrack = track;
        //Main line 1 
@@ -120,7 +124,7 @@ public class DisplayMode  {
        byte[] sysex3 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("Device: ", 8).addString(pDev, pDev.length()).terminate();
           dMidiOut.sendSysex(sysex3);
 
-          String pTrack = dASQCE.mBrowserResult.name().get();
+          String pTrack = dBrowserResult.name().get();
          byte[] sysex2 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.magenta).addByte(sH.spc).addString("Preset: ", 8).addString(pTrack, pTrack.length()).terminate();
             dMidiOut.sendSysex(sysex2);
 
@@ -251,7 +255,7 @@ public class DisplayMode  {
  
     public void InstMode ()
     {
-       dHost.showPopupNotification("Devices");
+      dHost.showPopupNotification("Devices");
        dApplication.focusPanelBelow();
        //dHost.println("InstMode");
        //dHost.showPopupNotification("Instrument Mode");

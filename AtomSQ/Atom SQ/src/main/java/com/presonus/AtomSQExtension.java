@@ -112,7 +112,7 @@ public class AtomSQExtension extends ControllerExtension
    //private static final ControllerHost mHost = null;
 
 
-   private  SysexHandler sH = new SysexHandler();
+   //private  SysexHandler sH = new SysexHandler();
    // private SysexBuilder sB = new SysexBuilder();
    public CursorDevice mCursorDevice;
    public CursorTrack mCursorTrack;
@@ -127,6 +127,7 @@ public class AtomSQExtension extends ControllerExtension
    public CursorBrowserResultItem mBrowserResult;
    private CursorBrowserFilterItem mBrowserCategory;
    private CursorBrowserFilterItem mBrowserCreator;
+   private CursorBrowserFilterItem mBrowserTag;
    private DisplayMode DM;
    public ControllerHost mHost;
    //private Object mLastMode;
@@ -154,18 +155,18 @@ public class AtomSQExtension extends ControllerExtension
     
   //changed from pinnable cursor device
 
-      final ControllerHost host = getHost();
+      mHost = getHost();
       DM = new DisplayMode();
      
       //DisplayMode.initializeDisplayMode(mApplication, mCursorTrack, mCursorDevice, host);
       //added final here in testing for method in sysexhandler...might break something.
-      mApplication = host.createApplication();
+      mApplication = mHost.createApplication();
       mApplication.panelLayout().markInterested();
       mApplication.canRedo().markInterested();
       mApplication.canUndo().markInterested();
 
-      mMidiOut = host.getMidiOutPort(0);
-      mMidiIn = host.getMidiInPort(0);
+      mMidiOut = mHost.getMidiOutPort(0);
+      mMidiIn = mHost.getMidiInPort(0);
       //HINT: Notes not playing? these values are configured for CH 10 on the midi controller, which is the default. If this is not set, close BW, then reset in the generic controller menu!
       mMidiIn.createNoteInput (DEV_NAME, NOTE_ON, NOTE_OFF, NOTE_MOD, NOTE_BEND, NOTE_PRES);
     
@@ -174,7 +175,7 @@ public class AtomSQExtension extends ControllerExtension
 
       //Cursor Track / Device stuff
       //the first int here dictates the number of sends! this is different than the arrainger track itself, so the number of sends on the actual track are not relevant.
-      mCursorTrack = host.createCursorTrack(6, 0);
+      mCursorTrack = mHost.createCursorTrack(6, 0);
       mCursorTrack.solo().markInterested();
       mCursorTrack.mute().markInterested();
       mCursorTrack.arm().markInterested();
@@ -194,7 +195,7 @@ public class AtomSQExtension extends ControllerExtension
       mSendBank = mCursorTrack.sendBank();
 
       //MasterTrack
-      mMasterTrack = host.createMasterTrack(0);
+      mMasterTrack = mHost.createMasterTrack(0);
       mMasterTrack.volume().markInterested();
 
       //Cursor HW Layout creation
@@ -213,7 +214,7 @@ public class AtomSQExtension extends ControllerExtension
       //create RCs for encoders
 
 
-      mPopupBrowser = host.createPopupBrowser();
+      mPopupBrowser = mHost.createPopupBrowser();
       mPopupBrowser.exists().markInterested();
       mPopupBrowser.selectedContentTypeIndex().markInterested();
 
@@ -225,19 +226,17 @@ public class AtomSQExtension extends ControllerExtension
 
       mBrowserCategory =(CursorBrowserFilterItem) mPopupBrowser.categoryColumn().createCursorItem();
       mBrowserCreator = (CursorBrowserFilterItem) mPopupBrowser.creatorColumn().createCursorItem();
-
-      //inc2 = getHost().createAction(() ->  mBrowserResult.selectPreviousAction(),  () -> "+");
-      //dec2 = getHost().createAction(() -> mBrowserResult.selectPreviousAction(),  () -> "-");
-
-      mBrowserResult.selectNextAction();
-      mBrowserResult.hasNext().markInterested();
-      mBrowserResult.hasPrevious().markInterested();
+      mBrowserTag = (CursorBrowserFilterItem) mPopupBrowser.tagColumn().createCursorItem();
+      //mBrowserResult.selectNextAction();
+      //mBrowserResult.hasNext().markInterested();
+      //mBrowserResult.hasPrevious().markInterested();
       mBrowserResult.exists().markInterested();
       mBrowserCategory.exists().markInterested();
       mBrowserCreator.exists().markInterested();
       mBrowserResult.name().markInterested();
-      mBrowserCategory.name().markInterested();
-      mBrowserCreator.name().markInterested();
+      mBrowserTag.exists().markInterested();
+      //mBrowserCategory.name().markInterested();
+      //mBrowserCreator.name().markInterested();
       //TODO clean this up after documenting. the layers were the problem, not necessary. variables needs renaming.
      
       mCDLDBnk = mCursorTrack.createDeviceBank(3);
@@ -263,7 +262,7 @@ public class AtomSQExtension extends ControllerExtension
 
 
      // mTrackBank = mCursorTrack.createTrackBank(3,0,0,false);
-      mTrackBank = host.createTrackBank(3,0,0,true);
+      mTrackBank = mHost.createTrackBank(3,0,0,true);
       mTrackBank.followCursorTrack(mCursorTrack);
       mTrackBank.canScrollBackwards().markInterested();
       mTrackBank.canScrollForwards().markInterested();
@@ -291,7 +290,7 @@ public class AtomSQExtension extends ControllerExtension
       //remoted RC set indication from here, as it was otherwise always indicated, even out of focus in Mix mode
     
       //Transport
-      mTransport = host.createTransport();
+      mTransport = mHost.createTransport();
       mTransport.isPlaying().markInterested();
       mTransport.isArrangerRecordEnabled ().markInterested ();
       mTransport.isMetronomeEnabled ().markInterested();
@@ -301,7 +300,7 @@ public class AtomSQExtension extends ControllerExtension
       
 
       //API Hardware surface
-      createHardwareSurface();
+      inithardwareSurface(mHost);
 
       //Layers
       initLayers();
@@ -311,7 +310,7 @@ public class AtomSQExtension extends ControllerExtension
       //this and initializing the InstMode below mimic what happens when the Inst button ispressed.
 
       //Modes
-      InstMode();
+    
       //mCursorTrack.selectParent();
       //mCursorTrack.selectInMixer();
       //mApplication.focusPanelAbove();
@@ -325,18 +324,18 @@ public class AtomSQExtension extends ControllerExtension
          {
             //mBrowserLayer.activate();
             activateLayer(mBrowserLayer, null);
-            BrowserMode();
+            DM.BrowserMode();
          } 
          else{
             mBrowserLayer.deactivate();
             activateLayer(mLastLayer, null);
             //TODO this is ugly and manual, but it should work. I cannot get a good logic to do this.
-            if (mLastLayer == mInstLayer){InstMode();}
-            if (mLastLayer == mInst2Layer){Inst2Mode();}
-            if (mLastLayer == mSongLayer){SongMode();}
-            if (mLastLayer == mSong2Layer){Song2Mode();}
-            if (mLastLayer == mEditLayer){EditMode();}
-            if (mLastLayer == mUserLayer){UserMode();}
+            if (mLastLayer == mInstLayer){DM.InstMode();}
+            if (mLastLayer == mInst2Layer){DM.Inst2Mode();}
+            if (mLastLayer == mSongLayer){DM.SongMode();}
+            if (mLastLayer == mSong2Layer){DM.Song2Mode();}
+            if (mLastLayer == mEditLayer){DM.EditMode();}
+            if (mLastLayer == mUserLayer){DM.UserMode();}
          }
             
             //this works, but is redundant. Need the mode, not the layer now.
@@ -344,22 +343,23 @@ public class AtomSQExtension extends ControllerExtension
       });
 
       //these HAVE to stay at the bottom! this does allow the package file to use "this" to access the variable tho!
-      DM.init(this);
+      DM.start(this);
       DM.initHW();
+      DM.InstMode();
 
       //Notifications      
-      host.showPopupNotification("Atom SQ Initialized");
+      mHost.showPopupNotification("Atom SQ Initialized");
    }
 
      ////////////////////////
     //  Hardware Surface  //
    ////////////////////////
 
-   private void createHardwareSurface()
+   private void inithardwareSurface(ControllerHost mHost)
    {
       //called in Init
      // mHardwareSurface = getHost().createHardwareSurface(); //from APC40. maybe clearer, not sure if this would be a problem for re-classing
-      final ControllerHost host = getHost();
+      final ControllerHost host = mHost;
       final HardwareSurface surface = host.createHardwareSurface();
       mHardwareSurface = surface;
       surface.setPhysicalSize(400, 200);
@@ -739,7 +739,7 @@ public class AtomSQExtension extends ControllerExtension
             // mInst2Layer.deactivate();
             //mInstLayer.activate();
             activateLayer(mInstLayer, null);
-            InstMode();
+            DM.InstMode();
          }
          // else if (mInst3Layer.isActive()) {
          //    //mInst3Layer.deactivate();
@@ -750,7 +750,7 @@ public class AtomSQExtension extends ControllerExtension
          else if (mSong2Layer.isActive()){
             //mSong2Layer.deactivate();
             activateLayer(mSongLayer, null);
-            SongMode();
+            DM.SongMode();
          }
          
       });
@@ -764,7 +764,7 @@ public class AtomSQExtension extends ControllerExtension
            // mInstLayer.deactivate();
            // mInst2Layer.activate();
            activateLayer(mInst2Layer, mInstLayer);
-            Inst2Mode();
+            DM.Inst2Mode();
          
          }
          // else if (mInst2Layer.isActive())
@@ -777,7 +777,7 @@ public class AtomSQExtension extends ControllerExtension
          else if (mSongLayer.isActive()){
            // mSong2Layer.activate();
            activateLayer(mSong2Layer, mSongLayer);
-            Song2Mode();
+            DM.Song2Mode();
          }
 
       });
@@ -785,24 +785,24 @@ public class AtomSQExtension extends ControllerExtension
       //Menu Buttons
       mBaseLayer.bindPressed(mSongButton, () -> {
          activateLayer(mSongLayer, null);
-         SongMode(); 
+         DM.SongMode(); 
          });
       //cannot add a light action to ta bindPressed. would be ", mSongLayer.isActive().get()" at the end. Need to figure somethinge else out. 
       // mTransport.isPlaying() works here, if the songlayer has been pressed. odd.
 
       mBaseLayer.bindPressed(mInstButton, () -> {
          activateLayer(mInstLayer, null);
-         InstMode();
+         DM.InstMode();
          });
 
       mBaseLayer.bindPressed(mEditorButton, () -> {
          activateLayer(mEditLayer, null);
-         EditMode();
+         DM.EditMode();
          });
 
       mBaseLayer.bindPressed(mUserButton, () -> {
          activateLayer(mUserLayer, null);
-         UserMode();
+         DM.UserMode();
          });
       
       //Transport
@@ -878,6 +878,7 @@ public class AtomSQExtension extends ControllerExtension
 
    private void createSongLayer()
    {
+         //this turns lights on and off. 
       mSongLayer.bind(() -> true, mForwardButton);
       //notifications
       // getHost().println("SongLayer active");
@@ -907,7 +908,7 @@ public class AtomSQExtension extends ControllerExtension
    }
 
    private void createSong2Layer() {
-
+      //this turns lights on and off. 
       mSong2Layer.bind(() -> true, mBackButton);
       mSong2Layer.bind(() -> false, mForwardButton);
       mSong2Layer.bindToggle(m1Button, mCursorTrack.isActivated());
@@ -920,6 +921,7 @@ public class AtomSQExtension extends ControllerExtension
 
    private void createInstLayer()
    {
+         //this turns lights on and off. 
       mInstLayer.bind(() -> true, mForwardButton);
      // mInstLayer.bind(mEncoders[8], mMasterTrack.volume());
 
@@ -950,6 +952,7 @@ public class AtomSQExtension extends ControllerExtension
 
    private void createInst2Layer()
    {
+         //this turns lights on and off. 
       mInst2Layer.bind(() -> true, mBackButton);
       mInst2Layer.bind(() -> false, mForwardButton);
       //Monitor mode
@@ -1035,8 +1038,12 @@ public class AtomSQExtension extends ControllerExtension
       //mBrowserLayer.bind(mEncoders[8], mBrowserResult );
       //Boolean boolean1 = null;
 
-      final HardwareActionBindable inc5 = getHost().createAction(() ->  mBrowserCategory.selectNext(),  () -> "+");
-      final HardwareActionBindable dec5 = getHost().createAction(() -> mBrowserCategory.selectPrevious(),  () -> "-");
+      final HardwareActionBindable inc4 = getHost().createAction(() ->  mBrowserCategory.selectNext(),  () -> "+");
+      final HardwareActionBindable dec4 = getHost().createAction(() -> mBrowserCategory.selectPrevious(),  () -> "-");
+      mBrowserLayer.bind(mEncoders[4], getHost().createRelativeHardwareControlStepTarget(inc4, dec4));
+
+      final HardwareActionBindable inc5 = getHost().createAction(() ->  mBrowserTag.selectNext(),  () -> "+");
+      final HardwareActionBindable dec5 = getHost().createAction(() -> mBrowserTag.selectPrevious(),  () -> "-");
       mBrowserLayer.bind(mEncoders[5], getHost().createRelativeHardwareControlStepTarget(inc5, dec5));
 
       final HardwareActionBindable inc6 = getHost().createAction(() ->  mBrowserCreator.selectNext(),  () -> "+");
@@ -1048,9 +1055,7 @@ public class AtomSQExtension extends ControllerExtension
       mBrowserLayer.bind(mEncoders[7], getHost().createRelativeHardwareControlStepTarget(inc7, dec7));
 
 
-
-
-      
+      mBrowserLayer.bindToggle(m4Button, mPopupBrowser.shouldAudition(), mPopupBrowser.shouldAudition());
       mBrowserLayer.bindPressed(m5Button, mPopupBrowser.cancelAction());
       mBrowserLayer.bindPressed(m6Button, mPopupBrowser.commitAction());
      
@@ -1087,7 +1092,7 @@ public class AtomSQExtension extends ControllerExtension
      ////////////////////////
     //       Modes        //
    ////////////////////////
-  
+  /* 
    public void updateDisplay ()
    {
 
@@ -1105,9 +1110,9 @@ public class AtomSQExtension extends ControllerExtension
          mMidiOut.sendSysex(sysex3);
 
    }
-
+ */
    //changing private to public for the mode finder bits in the layer change above
-   public void SongMode ()
+/*    public void SongMode ()
    {
       //getHost().println("SongMode");
       getHost().showPopupNotification("Tracks");
@@ -1336,7 +1341,7 @@ public class AtomSQExtension extends ControllerExtension
 
      mMidiOut.sendSysex("F0000106221301F7");
    }
-
+ */
      ////////////////////////
     //  Standard Methods  //
    ////////////////////////
@@ -1433,7 +1438,7 @@ public class AtomSQExtension extends ControllerExtension
    private MidiIn mMidiIn;
    public MidiOut mMidiOut;
    //making public to usein SysexHandler. Static too
-   private Application mApplication;
+   public Application mApplication;
    private boolean mShift;
   //private NoteInput mNoteInput;
   private HardwareSurface mHardwareSurface;
