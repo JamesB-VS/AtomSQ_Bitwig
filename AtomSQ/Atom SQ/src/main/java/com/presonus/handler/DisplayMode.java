@@ -188,10 +188,10 @@ public class DisplayMode  {
        //dApplication.setPanelLayout("MIX");
  
        //lights on buttons
-       dMidiOut.sendMidi(176, CC_SONG, 127);
-       dMidiOut.sendMidi(176, CC_INST, 00);
-       dMidiOut.sendMidi(176, CC_EDIT, 00);
-       dMidiOut.sendMidi(176, CC_USER, 00);
+      //  dMidiOut.sendMidi(176, CC_SONG, 127);
+      //  dMidiOut.sendMidi(176, CC_INST, 00);
+      //  dMidiOut.sendMidi(176, CC_EDIT, 00);
+      //  dMidiOut.sendMidi(176, CC_USER, 00);
  
  
        dMidiOut.sendSysex("F0000106221300F7");
@@ -231,10 +231,10 @@ public class DisplayMode  {
        //dApplication.setPanelLayout("MIX");
  
        //lights on buttons
-       dMidiOut.sendMidi(176, CC_SONG, 127);
-       dMidiOut.sendMidi(176, CC_INST, 00);
-       dMidiOut.sendMidi(176, CC_EDIT, 00);
-       dMidiOut.sendMidi(176, CC_USER, 00);
+      //  dMidiOut.sendMidi(176, CC_SONG, 127);
+      //  dMidiOut.sendMidi(176, CC_INST, 00);
+      //  dMidiOut.sendMidi(176, CC_EDIT, 00);
+      //  dMidiOut.sendMidi(176, CC_USER, 00);
  
  
        dMidiOut.sendSysex("F0000106221300F7");
@@ -264,10 +264,10 @@ public class DisplayMode  {
       // mInstLayer.activate();
  
          //lights on buttons
-         dMidiOut.sendMidi(176, CC_SONG, 00);
-         dMidiOut.sendMidi(176, CC_INST, 127);
-         dMidiOut.sendMidi(176, CC_EDIT, 00);
-         dMidiOut.sendMidi(176, CC_USER, 00);
+         // dMidiOut.sendMidi(176, CC_SONG, 00);
+         // dMidiOut.sendMidi(176, CC_INST, 127);
+         // dMidiOut.sendMidi(176, CC_EDIT, 00);
+         // dMidiOut.sendMidi(176, CC_USER, 00);
  
        //configure display
        dMidiOut.sendSysex("F0000106221300F7");
@@ -353,10 +353,10 @@ public class DisplayMode  {
        dHost.showPopupNotification("Edit Mode");
  
                //lights on buttons
-               dMidiOut.sendMidi(176, CC_SONG, 00);
-               dMidiOut.sendMidi(176, CC_INST, 00);
-               dMidiOut.sendMidi(176, CC_EDIT, 127);
-               dMidiOut.sendMidi(176, CC_USER, 00);
+               // dMidiOut.sendMidi(176, CC_SONG, 00);
+               // dMidiOut.sendMidi(176, CC_INST, 00);
+               // dMidiOut.sendMidi(176, CC_EDIT, 127);
+               // dMidiOut.sendMidi(176, CC_USER, 00);
  
  
        dMidiOut.sendSysex("F0000106221300F7");
@@ -388,12 +388,12 @@ public class DisplayMode  {
     {
        dHost.println("UserMode");
        dHost.showPopupNotification("User Mode");
-       
-               //lights on buttons
-               dMidiOut.sendMidi(176, CC_SONG, 00);
-               dMidiOut.sendMidi(176, CC_INST, 00);
-               dMidiOut.sendMidi(176, CC_EDIT, 00);
-               dMidiOut.sendMidi(176, CC_USER, 127);
+
+      //lights on buttons
+      // dMidiOut.sendMidi(176, CC_SONG, 00);
+      // dMidiOut.sendMidi(176, CC_INST, 00);
+      // dMidiOut.sendMidi(176, CC_EDIT, 00);
+      // dMidiOut.sendMidi(176, CC_USER, 127);
  
        // mSongLayer.activate();
       dMidiOut.sendSysex("F0000106221401F7");
