@@ -86,6 +86,8 @@ public class DisplayMode  {
    public CursorBrowserResultItem dBrowserResult;
    private Application dApplication;
 
+
+
     public void start(AtomSQExtension Ext){
       dASQCE = Ext;
       dHost = dASQCE.mHost;
@@ -98,8 +100,7 @@ public class DisplayMode  {
       dBrowserResult = dASQCE.mBrowserResult;
  
     }
-       
-
+      
     public void updateDisplay ()
     {
         if(!dBrowserLayer.isActive())
@@ -174,7 +175,7 @@ public class DisplayMode  {
       dMidiOut.sendSysex("F0000106221300F7");
       //this line alone makes the Inst menu at least come back to life!
       //it also takes command of the nav keys on the right...if set to 0, the display still shows and navigates, but thie keys ALSO send midi messages
-      // this.portOut.sendSysex("F0000106221401F7");
+      //dMidiOut.sendSysex("F0000106221401F7");
       dMidiOut.sendSysex("F0000106221301F7");
     }
 
