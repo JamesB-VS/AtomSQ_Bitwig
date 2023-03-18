@@ -17,7 +17,15 @@ Because I could not accept that my cool Atom SQ reverted to providing non-endles
 
 
 ## How?
-
+Condensing this into a few sentences feels cheap, as there were literal months of mornings and weekends that went into figuring this all out, but in the end, the extension came to be thusly:
+1. refusal to accept the presented reality of a shitty basic-ass midi implementation for this awesome controller in my software of choice.
+2. got gud at Midi: monitored and recorded midi traffic between the controller and other Daws to understand the flow of things. Made a midi-map.
+3. learned the secret handshake: this has been mentioned in randome places on the internets before, but the key to endless encoders is to get the controller to work in Live mode. this is done by sending a midi message of 143,00,01.
+4. Wrote a nice javascript extension. patted self on back. 
+5. learned there were better ways and newer things. swalled the bitter pill that I would have to start over with Java. 
+6. Rememberd I did not know Java. 
+7. Learned me some Java.
+8. wrote this script. 
 
 
 
