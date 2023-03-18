@@ -13,66 +13,8 @@ import com.bitwig.extensions.framework.Layer;
 import com.bitwig.extension.api.util.midi.SysexBuilder;
 import com.presonus.AtomSQExtension;
 
-
 public class DisplayMode  {
 
-    
-   //Variables from Hardware
-   // Transport
-   private final static int  CC_PLAY      = 109;
-   private final static int  CC_STOP      = 111;
-   private final static int  CC_REC       = 107;
-   private final static int  CC_METRONOME = 105;
-   //Menu Buttons
-   private final static int  CC_SONG      = 32;
-   private final static int  CC_INST      = 33;
-   private final static int  CC_EDIT      = 34;
-   private final static int  CC_USER      = 35;
-   //Arrow Buttons
-   private final static int  CC_UP       =87;
-   private final static int  CC_DOWN      =89;
-   private final static int  CC_LEFT      =90;
-   private final static int  CC_RIGHT      =102;
-   //shift
-   private final static int  CC_SHIFT     =31;
-   //A-H (only A works in Live mode)
-   private final static int  CC_BTN_A     =64;
-   //private final static int  CHAN_1 = 176;
-   //private final static int  CHAN_2 = 177;
-   //Display Buttons, top to bottom, left to right
-   //1 2 3
-   //[   ]
-   //4 5 6
-   private final static int  CC_BTN_1     =36;
-   private final static int  CC_BTN_2     =37;
-   private final static int  CC_BTN_3     =38;
-   private final static int  CC_BTN_4     =39;
-   private final static int  CC_BTN_5     =40;
-   private final static int  CC_BTN_6     =41;
-   //outside of the INST menu, the encoder and buttons on the right
-   private final static int  CC_BACK      =42;
-   private final static int  CC_FORWARD    =43;
-   private final static int  CC_ENCODER_9     =29;
-   //device name, note on, note off, pressure, ribbon, pitchbend
-   private final static String  DEV_NAME      = "Keyboard";
-   private final static String  NOTE_ON       = "99????";
-   private final static String  NOTE_OFF      = "89????";
-   private final static String  NOTE_PRES     = "a9????"; //poly aftertouch
-   private final static String  NOTE_MOD      = "b001??";
-   private final static String  NOTE_BEND     = "e0????";
-   //Encoders
-   private final static int  CC_ENCODER_1     = 14;
-   //Enc 2-8 not needed because the encoders are created in an iteration below. 
-
-   //ATOM colors
-   private static final Color WHITE = Color.fromRGB(1, 1, 1);
-   private static final Color BLACK = Color.fromRGB(0, 0, 0);
-   private static final Color RED = Color.fromRGB(1, 0, 0);
-   private static final Color DIM_RED = Color.fromRGB(0.3, 0.0, 0.0);
-   private static final Color GREEN = Color.fromRGB(0, 1, 0);
-   private static final Color ORANGE = Color.fromRGB(1, 1, 0);
-   private static final Color BLUE = Color.fromRGB(0, 0, 1);
-   
     private static SysexHandler sH = new SysexHandler();
    // private static MidiIn dMidiIn;
    private  MidiOut dMidiOut;
@@ -188,12 +130,7 @@ public class DisplayMode  {
  
        //dApplication.setPanelLayout("MIX");
  
-       //lights on buttons
-      //  dMidiOut.sendMidi(176, CC_SONG, 127);
-      //  dMidiOut.sendMidi(176, CC_INST, 00);
-      //  dMidiOut.sendMidi(176, CC_EDIT, 00);
-      //  dMidiOut.sendMidi(176, CC_USER, 00);
- 
+
  
        dMidiOut.sendSysex("F0000106221300F7");
        dMidiOut.sendSysex("F0000106221400F7");
@@ -231,12 +168,6 @@ public class DisplayMode  {
       
        //dApplication.setPanelLayout("MIX");
  
-       //lights on buttons
-      //  dMidiOut.sendMidi(176, CC_SONG, 127);
-      //  dMidiOut.sendMidi(176, CC_INST, 00);
-      //  dMidiOut.sendMidi(176, CC_EDIT, 00);
-      //  dMidiOut.sendMidi(176, CC_USER, 00);
- 
  
        dMidiOut.sendSysex("F0000106221300F7");
        dMidiOut.sendSysex("F0000106221400F7");
@@ -263,12 +194,6 @@ public class DisplayMode  {
        //dApplication.setPanelLayout("ARRANGE");
        //activate layer, deactivate others (for encoders)
       // mInstLayer.activate();
- 
-         //lights on buttons
-         // dMidiOut.sendMidi(176, CC_SONG, 00);
-         // dMidiOut.sendMidi(176, CC_INST, 127);
-         // dMidiOut.sendMidi(176, CC_EDIT, 00);
-         // dMidiOut.sendMidi(176, CC_USER, 00);
  
        //configure display
        dMidiOut.sendSysex("F0000106221300F7");
@@ -321,44 +246,11 @@ public class DisplayMode  {
        dMidiOut.sendSysex("F0000106221301F7");
     }
  
-    public void Inst3Mode ()
-    {
-       //dApplication.setPanelLayout("ARRANGE");
-       dMidiOut.sendSysex("F0000106221300F7");
-       dMidiOut.sendSysex("F0000106221400F7");
-      
-       //button titles
-       String[] mTitles= {"", "Duplicate", "Delete", "", "Duplicate", "Delete"};
-       
-       for (int i = 0; i < 3; i++) 
-       {
-          final String msg = mTitles[i];
-          byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
-          dMidiOut.sendSysex(sysex);
-       }
-       for (int i = 3; i < 6; i++) 
-       {
-          final String msg = mTitles[i];
-          byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
-          dMidiOut.sendSysex(sysex);
-       }
- 
-       // Encoder 9...must recenter it? 00 and 127 have no other visible effect.
-       dMidiOut.sendMidi(176, 29, 00);
-       dMidiOut.sendSysex("F0000106221301F7");
-    }
- 
+   
     public void EditMode ()
     {
        //dHost.println("EditMode");
        dHost.showPopupNotification("Edit Mode");
- 
-               //lights on buttons
-               // dMidiOut.sendMidi(176, CC_SONG, 00);
-               // dMidiOut.sendMidi(176, CC_INST, 00);
-               // dMidiOut.sendMidi(176, CC_EDIT, 127);
-               // dMidiOut.sendMidi(176, CC_USER, 00);
- 
  
        dMidiOut.sendSysex("F0000106221300F7");
        dMidiOut.sendSysex("F0000106221400F7");
@@ -390,12 +282,6 @@ public class DisplayMode  {
        dHost.println("UserMode");
        dHost.showPopupNotification("User Mode");
 
-      //lights on buttons
-      // dMidiOut.sendMidi(176, CC_SONG, 00);
-      // dMidiOut.sendMidi(176, CC_INST, 00);
-      // dMidiOut.sendMidi(176, CC_EDIT, 00);
-      // dMidiOut.sendMidi(176, CC_USER, 127);
- 
        // mSongLayer.activate();
       dMidiOut.sendSysex("F0000106221401F7");
       dMidiOut.sendSysex("F0000106221301F7");
@@ -405,13 +291,6 @@ public class DisplayMode  {
     {
        //dHost.println("EditMode");
        dHost.showPopupNotification("Browser");
- 
-               //lights on buttons
-               dMidiOut.sendMidi(176, CC_SONG, 00);
-               dMidiOut.sendMidi(176, CC_INST, 00);
-               dMidiOut.sendMidi(176, CC_EDIT, 00);
-               dMidiOut.sendMidi(176, CC_USER, 00);
- 
  
        dMidiOut.sendSysex("F0000106221300F7");
        dMidiOut.sendSysex("F0000106221400F7");

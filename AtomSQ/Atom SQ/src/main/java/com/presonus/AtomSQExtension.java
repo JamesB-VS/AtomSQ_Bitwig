@@ -42,64 +42,9 @@ import com.bitwig.extensions.framework.Layer;
 import com.bitwig.extensions.framework.Layers;
 
 import com.presonus.handler.DisplayMode;
+import com.presonus.handler.HardwareHandler;;
 public class AtomSQExtension extends ControllerExtension
 {
-
-   //Variables from Hardware
-   // Transport
-   private final static int  CC_PLAY      = 109;
-   private final static int  CC_STOP      = 111;
-   private final static int  CC_REC       = 107;
-   private final static int  CC_METRONOME = 105;
-   //Menu Buttons
-   private final static int  CC_SONG      = 32;
-   private final static int  CC_INST      = 33;
-   private final static int  CC_EDIT      = 34;
-   private final static int  CC_USER      = 35;
-   //Arrow Buttons
-   private final static int  CC_UP       =87;
-   private final static int  CC_DOWN      =89;
-   private final static int  CC_LEFT      =90;
-   private final static int  CC_RIGHT      =102;
-   //shift
-   private final static int  CC_SHIFT     =31;
-   //A-H (only A works in Live mode)
-   private final static int  CC_BTN_A     =64;
-   //private final static int  CHAN_1 = 176;
-   //private final static int  CHAN_2 = 177;
-   //Display Buttons, top to bottom, left to right
-   //1 2 3
-   //[   ]
-   //4 5 6
-   private final static int  CC_BTN_1     =36;
-   private final static int  CC_BTN_2     =37;
-   private final static int  CC_BTN_3     =38;
-   private final static int  CC_BTN_4     =39;
-   private final static int  CC_BTN_5     =40;
-   private final static int  CC_BTN_6     =41;
-   //outside of the INST menu, the encoder and buttons on the right
-   private final static int  CC_BACK      =42;
-   private final static int  CC_FORWARD    =43;
-   private final static int  CC_ENCODER_9     =29;
-   //device name, note on, note off, pressure, ribbon, pitchbend
-   private final static String  DEV_NAME      = "Keyboard";
-   private final static String  NOTE_ON       = "99????";
-   private final static String  NOTE_OFF      = "89????";
-   private final static String  NOTE_PRES     = "a9????"; //poly aftertouch
-   private final static String  NOTE_MOD      = "b001??";
-   private final static String  NOTE_BEND     = "e0????";
-   //Encoders
-   private final static int  CC_ENCODER_1     = 14;
-   //Enc 2-8 not needed because the encoders are created in an iteration below. 
-
-   //ATOM colors
-   private static final Color WHITE = Color.fromRGB(1, 1, 1);
-   private static final Color BLACK = Color.fromRGB(0, 0, 0);
-   private static final Color RED = Color.fromRGB(1, 0, 0);
-   private static final Color DIM_RED = Color.fromRGB(0.3, 0.0, 0.0);
-   private static final Color GREEN = Color.fromRGB(0, 1, 0);
-   private static final Color ORANGE = Color.fromRGB(1, 1, 0);
-   private static final Color BLUE = Color.fromRGB(0, 0, 1);
 
    public CursorDevice mCursorDevice;
    public CursorTrack mCursorTrack;
@@ -112,6 +57,7 @@ public class AtomSQExtension extends ControllerExtension
    private CursorBrowserFilterItem mBrowserTag;
    private DisplayMode DM;
    public ControllerHost mHost;
+   private static HardwareHandler hH = new HardwareHandler();
 
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
    {
@@ -138,7 +84,7 @@ public class AtomSQExtension extends ControllerExtension
       mMidiOut = mHost.getMidiOutPort(0);
       mMidiIn = mHost.getMidiInPort(0);
       //HINT: Notes not playing? these values are configured for CH 10 on the midi controller, which is the default. If this is not set, close BW, then reset in the generic controller menu!
-      mMidiIn.createNoteInput (DEV_NAME, NOTE_ON, NOTE_OFF, NOTE_MOD, NOTE_BEND, NOTE_PRES);
+      mMidiIn.createNoteInput (hH.DEV_NAME, hH.NOTE_ON, hH.NOTE_OFF, hH.NOTE_MOD, hH.NOTE_BEND, hH.NOTE_PRES);
     
       //mMidiIn.setMidiCallback((ShortMidiMessageReceivedCallback)msg -> onMidi0(msg));
       //mNoteInput.setShouldConsumeEvents(true);
@@ -323,56 +269,56 @@ public class AtomSQExtension extends ControllerExtension
       mHardwareSurface = surface;
       surface.setPhysicalSize(400, 200);
       
-      mShiftButton = createToggleButton("shift", CC_SHIFT, ORANGE);
+      mShiftButton = createToggleButton("shift", hH.CC_SHIFT, hH.ORANGE);
       mShiftButton.setLabel("Shift");
 
       // NAV section
-      mUpButton = createToggleButton("up", CC_UP, ORANGE);
+      mUpButton = createToggleButton("up", hH.CC_UP, hH.ORANGE);
       mUpButton.setLabel("Up");
-      mDownButton = createToggleButton("down", CC_DOWN, ORANGE);
+      mDownButton = createToggleButton("down", hH.CC_DOWN, hH.ORANGE);
       mDownButton.setLabel("Down");
-      mLeftButton = createToggleButton("left", CC_LEFT, ORANGE);
+      mLeftButton = createToggleButton("left", hH.CC_LEFT, hH.ORANGE);
       mLeftButton.setLabel("Left");
-      mRightButton = createToggleButton("right", CC_RIGHT, ORANGE);
+      mRightButton = createToggleButton("right", hH.CC_RIGHT, hH.ORANGE);
       mRightButton.setLabel("Right");
-      mBackButton = createToggleButton("back", CC_BACK, ORANGE);
+      mBackButton = createToggleButton("back", hH.CC_BACK, hH.ORANGE);
       mBackButton.setLabel("Back");
-      mForwardButton = createToggleButton("forward", CC_FORWARD, ORANGE);
+      mForwardButton = createToggleButton("forward", hH.CC_FORWARD, hH.ORANGE);
       mForwardButton.setLabel("Forward");
 
       // TRANS section
-      mClickCountInButton = createToggleButton("click_count_in", CC_METRONOME, BLUE);
+      mClickCountInButton = createToggleButton("click_count_in", hH.CC_METRONOME, hH.BLUE);
       mClickCountInButton.setLabel("Click\nCount in");
-      mRecordSaveButton = createToggleButton("record_save", CC_REC, RED);
+      mRecordSaveButton = createToggleButton("record_save", hH.CC_REC, hH.RED);
       mRecordSaveButton.setLabel("Record\nSave");
-      mPlayLoopButton = createToggleButton("play_loop", CC_PLAY, GREEN);
+      mPlayLoopButton = createToggleButton("play_loop", hH.CC_PLAY, hH.GREEN);
       mPlayLoopButton.setLabel("Play\nLoop");
-      mStopUndoButton = createToggleButton("stop_undo", CC_STOP, ORANGE);
+      mStopUndoButton = createToggleButton("stop_undo", hH.CC_STOP, hH.ORANGE);
       mStopUndoButton.setLabel("Stop\nUndo");
 
       // SONG section
-      mSongButton = createToggleButton("song", CC_SONG, ORANGE);
+      mSongButton = createToggleButton("song", hH.CC_SONG, hH.ORANGE);
       mSongButton.setLabel("SONG");
-      mEditorButton = createToggleButton("editor", CC_EDIT, ORANGE);
+      mEditorButton = createToggleButton("editor", hH.CC_EDIT, hH.ORANGE);
       mEditorButton.setLabel("Editor");
-      mInstButton = createToggleButton("inst", CC_INST, ORANGE);
+      mInstButton = createToggleButton("inst", hH.CC_INST, hH.ORANGE);
       mInstButton.setLabel("Inst");
-      mUserButton = createToggleButton("user", CC_USER, ORANGE);
+      mUserButton = createToggleButton("user", hH.CC_USER, hH.ORANGE);
       mUserButton.setLabel("User");
-      mAButton = createToggleButton("a", CC_BTN_A, RED);
+      mAButton = createToggleButton("a", hH.CC_BTN_A, hH.RED);
       mAButton.setLabel("A");
 
-      m1Button = createToggleButton("1", CC_BTN_1, ORANGE);
+      m1Button = createToggleButton("1", hH.CC_BTN_1, hH.ORANGE);
       m1Button.setLabel ("Btn 1");
-      m2Button = createToggleButton("2", CC_BTN_2, ORANGE);
+      m2Button = createToggleButton("2", hH.CC_BTN_2, hH.ORANGE);
       m2Button.setLabel ("Btn 2");
-      m3Button = createToggleButton("3", CC_BTN_3, ORANGE);
+      m3Button = createToggleButton("3", hH.CC_BTN_3, hH.ORANGE);
       m3Button.setLabel ("Btn 3");
-      m4Button = createToggleButton("4", CC_BTN_4, ORANGE);
+      m4Button = createToggleButton("4", hH.CC_BTN_4, hH.ORANGE);
       m4Button.setLabel ("Btn 4");
-      m5Button = createToggleButton("5", CC_BTN_5, ORANGE);
+      m5Button = createToggleButton("5", hH.CC_BTN_5, hH.ORANGE);
       m5Button.setLabel ("Btn 5");
-      m6Button = createToggleButton("6", CC_BTN_6, ORANGE);
+      m6Button = createToggleButton("6", hH.CC_BTN_6, hH.ORANGE);
       m6Button.setLabel ("Btn 6");
 
       for (int i = 0; i < 9; i++)
@@ -455,7 +401,7 @@ public class AtomSQExtension extends ControllerExtension
       button.pressedAction().setActionMatcher(mMidiIn
          .createActionMatcher(midiExpressions.createIsCCExpression(0, controlNumber) + " && data2 > 0"));
       button.releasedAction().setActionMatcher(mMidiIn.createCCActionMatcher(0, controlNumber, 0));
-      button.setLabelColor(BLACK);
+      button.setLabelColor(hH.BLACK);
 
       return button;
    }
@@ -471,11 +417,11 @@ public class AtomSQExtension extends ControllerExtension
       //here you can adjust the last number to adjust the encoder sensitivity wthin BW. Smaller numbers are jumpy, but move faster
       //the knobs ARE speed sensitive
       if (index <= 7){
-      encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, CC_ENCODER_1 + index, 100));
+      encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, hH.CC_ENCODER_1 + index, 100));
       }
       //as the CC for encoder 9 is not sequencial, have to do this. 
       else {
-        encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, CC_ENCODER_9, 127));
+        encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, hH.CC_ENCODER_9, 127));
         //this could be worked on...the stepped encoder does not move as smoothly in BW as the others.
        // encoder.setStepSize(4.0);
 
