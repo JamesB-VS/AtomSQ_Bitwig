@@ -40,15 +40,15 @@ public class SysexHandler
 
     //Colors
     public final String yellow =     "7F7F00";
-    public final static String grey50 =     "7F7F7F";
-    public final static String magenta =    "7F007F";
-    public final static String seafoam =    "007F7F";
-    public final static String red =        "7F0000";
-    public final static String black =      "000000";
-    public final static String blue =       "00007F";
-    public final static String green =      "007f00";  
+    public final String grey50 =     "7F7F7F";
+    public final String magenta =    "7F007F";
+    public final String seafoam =    "007F7F";
+    public final String red =        "7F0000";
+    public final String black =      "000000";
+    public final String blue =       "00007F";
+    public final String green =      "007f00";  
     public final String white =      "7F7F7F";
-    public final static String ltblue =     "6fa8dc";
+    public final String ltblue =     "6fa8dc";
     
     //const for left
     public final static int spl =  0x1 ;
