@@ -4,6 +4,7 @@ com\bitwig\extensions\framework\RelativeHardwareControlBinding.class
 com\bitwig\extensions\framework\Binding.class
 com\bitwig\extensions\framework\RelativeHardwareControlToRangedValueBinding.class
 com\presonus\AtomSQExtension.class
+com\presonus\handler\HardwareHandler.class
 com\bitwig\extensions\framework\values\ValueObject$StringConverter.class
 com\presonus\AtomSQExtensionDefinition.class
 com\bitwig\extensions\framework\values\ValueObject$ChangeCallback.class
@@ -16,6 +17,7 @@ com\bitwig\extensions\framework\MusicalScale.class
 com\bitwig\extensions\framework\AbstractRelativeHardwareControlBinding.class
 com\bitwig\extensions\util\ValueUtils.class
 com\bitwig\extensions\framework\animation\BooleanAnimation.class
+com\presonus\handler\DisplayMode.class
 com\bitwig\extensions\framework\BooleanObject.class
 com\bitwig\extensions\framework\BooleanSupplierToPropertyBinding.class
 com\bitwig\extensions\framework\animation\Animation.class

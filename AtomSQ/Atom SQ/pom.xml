@@ -54,7 +54,7 @@
 						<configuration>
 							<sourceFile>${project.build.directory}/${project.build.finalName}.jar</sourceFile>
 							<destinationFile>C:\Users\Nova\Documents\Bitwig Studio\Extensions\AtomSQ.bwextension</destinationFile>
-							<destinationFile>${project.build.directory}/${project.build.finalName}\extension\AtomSQ.bwextension</destinationFile>
+							<!-- <destinationFile>${project.build.directory}/${project.build.finalName}\extension\AtomSQ.bwextension</destinationFile> -->
 						</configuration>
 					</execution>
 				</executions>
