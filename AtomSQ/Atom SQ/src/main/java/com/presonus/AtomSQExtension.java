@@ -6,7 +6,6 @@ import java.util.List;
 
 import com.bitwig.extension.api.Color;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
-//import com.bitwig.extension.callback.ShortMidiMessageReceivedCallback;
 import com.bitwig.extension.controller.ControllerExtension;
 import com.bitwig.extension.controller.api.Action;
 import com.bitwig.extension.controller.api.Application;
@@ -24,7 +23,6 @@ import com.bitwig.extension.controller.api.HardwareSurface;
 import com.bitwig.extension.controller.api.MidiExpressions;
 import com.bitwig.extension.controller.api.MidiIn;
 import com.bitwig.extension.controller.api.MidiOut;
-//import com.bitwig.extension.controller.api.NoteInput;
 import com.bitwig.extension.controller.api.OnOffHardwareLight;
 import com.bitwig.extension.controller.api.Parameter;
 import com.bitwig.extension.controller.api.RelativeHardwareKnob;
@@ -37,10 +35,12 @@ import com.bitwig.extension.controller.api.HardwareActionBindable;
 import com.bitwig.extension.controller.api.DeviceBank;
 import com.bitwig.extension.controller.api.Device;
 import com.bitwig.extension.controller.api.PopupBrowser;
-//these are not in the regular APIs...they come from the Bitwig repo though. 
+
+//Bitwig Framework components
 import com.bitwig.extensions.framework.Layer;
 import com.bitwig.extensions.framework.Layers;
 
+//Local components
 import com.presonus.handler.DisplayMode;
 import com.presonus.handler.HardwareHandler;;
 public class AtomSQExtension extends ControllerExtension
