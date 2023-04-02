@@ -1,6 +1,4 @@
 package com.presonus.handler;
-
-
 public class SysexHandler
 {
     //constant for header
@@ -59,8 +57,4 @@ public class SysexHandler
     
     // //constant for footer
     // public final static String foot = "F7";
-
-
-
-
 }
