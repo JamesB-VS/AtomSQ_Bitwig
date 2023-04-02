@@ -1,3 +1,7 @@
+// Written by James Bell
+// (c) 2023
+// Licensed under GPLv3 - https://www.gnu.org/licenses/gpl-3.0.txt
+
 package com.presonus.handler;
 
 import java.lang.reflect.Method;
