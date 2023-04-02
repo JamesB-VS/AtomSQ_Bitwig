@@ -1,3 +1,4 @@
 AtomSQ_Java.code-workspace
-/junk
-/.vscode
+junk/
+.vscode/*
+!.vscode/launch.json
