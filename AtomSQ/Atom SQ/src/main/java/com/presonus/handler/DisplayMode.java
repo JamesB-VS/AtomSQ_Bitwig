@@ -2,16 +2,18 @@ package com.presonus.handler;
 
 import java.lang.reflect.Method;
 
-import com.bitwig.extension.api.Color;
 import com.bitwig.extension.controller.api.Application;
 import com.bitwig.extension.controller.api.CursorDevice;
 import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.CursorBrowserResultItem;
 import com.bitwig.extension.controller.api.CursorTrack;
 import com.bitwig.extension.controller.api.MidiOut;
-import com.bitwig.extensions.framework.Layer;
 import com.bitwig.extension.api.util.midi.SysexBuilder;
+
+import com.bitwig.extensions.framework.Layer;
+
 import com.presonus.AtomSQExtension;
+
 
 public class DisplayMode  {
 
@@ -256,7 +258,7 @@ public class DisplayMode  {
        dMidiOut.sendSysex("F0000106221400F7");
  
        //button titles
-       String[] mTitles= {"1", "2", "3", "4", "5", "6"};
+       String[] mTitles= {"", "", "", "", "", ""};
        
        for (int i = 0; i < 6; i++) 
        {
@@ -296,7 +298,7 @@ public class DisplayMode  {
        dMidiOut.sendSysex("F0000106221400F7");
  
        //button titles
-       String[] mTitles= {"1", "2", "3", "Preview", "Cancel", "OK"};
+       String[] mTitles= {"", "", "", "Preview", "Cancel", "OK"};
        
        for (int i = 0; i < 6; i++) 
        {

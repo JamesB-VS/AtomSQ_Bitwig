@@ -18,7 +18,7 @@ public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public String getName()
    {
-      return "Atom SQ";
+      return "Atom SQ (by James)";
    }
    
    @Override
@@ -42,7 +42,7 @@ public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public String getHardwareVendor()
    {
-      return "Presonus";
+      return "PreSonus";
    }
    
    @Override
