@@ -1,4 +1,4 @@
-# Presonus Atom SQ Bitwig Extension
+# Presonus Atom SQ Bitwig Controller Extension
 
 ## Compatibility
  Bitwig Studio 4.4.x and above. I am not 100% certain what the more recent feature used is, so it may work with earlier versions. When in doubt, try it out. Feeback on this point is most welcome.
