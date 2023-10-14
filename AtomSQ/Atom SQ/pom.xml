@@ -6,7 +6,7 @@
 	<artifactId>atom-sq</artifactId>
 	<packaging>jar</packaging>
 	<name>Atom SQ</name>
-	<version>0.1</version>
+	<version>1.0</version>
 	
 	<repositories>
        <repository>
@@ -54,7 +54,7 @@
 						<configuration>
 							<sourceFile>${project.build.directory}/${project.build.finalName}.jar</sourceFile>
 							<destinationFile>C:\Users\Nova\Documents\Bitwig Studio\Extensions\AtomSQ.bwextension</destinationFile>
-							<!-- <destinationFile>${project.build.directory}/${project.build.finalName}\extension\AtomSQ.bwextension</destinationFile> -->
+							<destinationFile>${project.build.directory}/${project.build.finalName}\extension\AtomSQ.bwextension</destinationFile>
 						</configuration>
 					</execution>
 				</executions>

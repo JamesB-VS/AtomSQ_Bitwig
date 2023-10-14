@@ -2,7 +2,7 @@
 
 
 ## Requirements
-- This extension is based on the API version 17, available in Bitwig 4.4 ----check----
+- This extension is based on the API version 17, available in Bitwig 4.4 
 - It has only been tested on a Windows 11 sytem. Feedback from anyone using it on a Mac or Linux would be most welcome.
 
 
@@ -129,7 +129,7 @@ In this mode, the center of the display shows the Track: in yellow and the Devic
 |Button 3   |Deletes device  |-  |
 |Button 4   |Opens the browser to insert a new device to the left  |-  |
 |Button 5   |Opens the preset browser  |-  |
-|Button 6   |Opens the browser to insert a new device to the left   |-  |
+|Button 6   |Opens the browser to insert a new device to the right   |-  |
 
 
 #### Browser
