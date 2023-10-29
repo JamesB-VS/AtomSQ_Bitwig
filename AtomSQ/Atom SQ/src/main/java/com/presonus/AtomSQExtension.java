@@ -735,9 +735,12 @@ public class AtomSQExtension extends ControllerExtension
       mSongLayer.bindToggle(m2Button, mCursorTrack.solo());
       mSongLayer.bindToggle(m3Button, mCursorTrack.arm());
       //mSongLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
-      mSongLayer.bindPressed(m5Button,() ->{moveTrackUp();});
-      mSongLayer.bindPressed(m6Button, () ->{moveTrackDown();});
-     
+      //V1.1 adding lights to up/Down buttons
+         // mSongLayer.bindPressed(m5Button,() ->{moveTrackUp();});
+         // mSongLayer.bindPressed(m6Button, () ->{moveTrackDown();});
+      mSongLayer.bindToggle(m5Button, () ->{moveTrackUp();}, mCursorTrack.hasPrevious() );
+      mSongLayer.bindToggle(m6Button, () ->{moveTrackDown();}, mCursorTrack.hasNext());
+
       //Track Encoders
       mSongLayer.bind (mEncoders[6], mCursorTrack.pan());
       mSongLayer.bind (mEncoders[7], mCursorTrack.volume());
@@ -776,8 +779,9 @@ public class AtomSQExtension extends ControllerExtension
       mInstLayer.bindToggle(m2Button, mCursorDevice.isWindowOpen(), mCursorDevice.isWindowOpen());
       mInstLayer.bindToggle(m3Button, mCursorDevice.isExpanded(), mCursorDevice.isExpanded());
       mInstLayer.bindToggle(m4Button, mCursorDevice.isRemoteControlsSectionVisible(), mCursorDevice.isRemoteControlsSectionVisible());
-      mInstLayer.bindPressed(m5Button, () ->{moveDeviceLeft();});
-      mInstLayer.bindPressed(m6Button, () ->{moveDeviceRight();});
+     //V1.1 adding lights to these buttons
+      mInstLayer.bindToggle(m5Button, () ->{moveDeviceLeft();}, mCursorDevice.hasPrevious() );
+      mInstLayer.bindToggle(m6Button, () ->{moveDeviceRight();}, mCursorDevice.hasNext());
         
       //Encoders
       for (int i = 0; i < 8; i++)
@@ -868,6 +872,13 @@ public class AtomSQExtension extends ControllerExtension
       mCursorDevice.deviceChain().endOfDeviceChainInsertionPoint().browse();
    }
 }
+
+     ////////////////////////
+    //  Custom Methods    //
+   ////////////////////////
+
+
+
 
 
      ////////////////////////
