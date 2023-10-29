@@ -11,6 +11,7 @@ import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import com.bitwig.extension.controller.ControllerExtension;
 import com.bitwig.extension.controller.api.Action;
 import com.bitwig.extension.controller.api.Application;
+import com.bitwig.extension.controller.api.BooleanValue;
 import com.bitwig.extension.controller.api.CursorDevice;
 import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.CursorBrowserFilterItem;
@@ -22,6 +23,7 @@ import com.bitwig.extension.controller.api.HardwareButton;
 import com.bitwig.extension.controller.api.HardwareControlType;
 import com.bitwig.extension.controller.api.HardwareLightVisualState;
 import com.bitwig.extension.controller.api.HardwareSurface;
+import com.bitwig.extension.controller.api.IntegerValue;
 import com.bitwig.extension.controller.api.MidiExpressions;
 import com.bitwig.extension.controller.api.MidiIn;
 import com.bitwig.extension.controller.api.MidiOut;
@@ -134,7 +136,7 @@ public class AtomSQExtension extends ControllerExtension
          device.position().markInterested();
       }
 
-      //this! this makes the bank follow the cursor device!
+      //this! this makes the bank follow the cursor device.
       mCursorDevice.position().addValueObserver(cp -> {
          if (cp >= 0) {
             mCDLDBnk.scrollPosition().set(cp - 1);
@@ -164,9 +166,23 @@ public class AtomSQExtension extends ControllerExtension
          }
       });
 
-      mRemoteControls = mCursorDevice.createCursorRemoteControlsPage("CursorPage1", 8, "");
+
+      //Remote Control Pages
+      //mRemoteControls = mCursorDevice.createCursorRemoteControlsPage("CursorPage1", 8, "");
+      //v1.1 this is the other version, which should allow for using all remote pages
+      mRemoteControls = mCursorDevice.createCursorRemoteControlsPage(8);
       mRemoteControls.setHardwareLayout(HardwareControlType.ENCODER, 8);
-    
+      //NEW SHIZ
+      //trying to refresh the pages of remote controls...
+      mRemoteControls.selectedPageIndex().markInterested();
+      mRemoteControls.pageNames().markInterested();
+      
+      //v1.1 this should mark the names, so we can display them later...I hope
+      for (int i = 0; i < mRemoteControls.getParameterCount(); i++) {
+         Parameter parameter = mRemoteControls.getParameter(i);
+         parameter.name().markInterested();
+      }
+
       //Transport
       mTransport = mHost.createTransport();
       mTransport.isPlaying().markInterested();
@@ -205,6 +221,12 @@ public class AtomSQExtension extends ControllerExtension
          }
             
       });
+
+/*       //V1.1 assignment of default cursor device, so the empty screen does not appear on startup
+      mCursorDevice.selectFirst();
+      String mdname= mCursorDevice.name().toString();
+      mHost.println("mCursorDevice is currently " +mdname); */
+
 
       //these HAVE to stay at the bottom! this does allow the package file to use "this" to access the variable tho!
       DM.start(this);
@@ -438,15 +460,30 @@ public class AtomSQExtension extends ControllerExtension
    public void moveDeviceLeft() 
    {
       final Device previousDevice = mCDLDBnk.getDevice(0);
+      //these two lines resolved the issue of the bouncing ends. v1.1
+      // final Boolean notend = mCDLDBnk.canScrollBackwards().getAsBoolean();
+      // if (notend){ 
+         previousDevice.beforeDeviceInsertionPoint().moveDevices(mCursorDevice);
+         mCursorDevice.selectNext();
+         mCursorDevice.selectPrevious();
 
-      previousDevice.beforeDeviceInsertionPoint().moveDevices(mCursorDevice);
-      mCursorDevice.selectPrevious();
-      mCursorDevice.selectNext();
+
+      // }
    }
 
    public void moveDeviceRight() 
    {
-      final Device nextDevice = mCDLDBnk.getDevice(2);
+      //V1.1 to avoid a double jump if the cursor device is all the way on the left
+      final Device nextDevice;
+      final int mcdpos = mCursorDevice.position().get();
+      if( mcdpos == 0){
+      nextDevice = mCDLDBnk.getDevice(1);
+      }
+      else{nextDevice = mCDLDBnk.getDevice(2);}
+
+      // String ndname = nextDevice.name().toString();
+      // mHost.println("next Device is: "+ndname);
+
 
       nextDevice.afterDeviceInsertionPoint().moveDevices(mCursorDevice);
       mCursorDevice.selectPrevious();
@@ -459,6 +496,7 @@ public class AtomSQExtension extends ControllerExtension
       previousTrack.beforeTrackInsertionPoint().moveTracks(mCursorTrack);
       mCursorTrack.selectPrevious();
       mCursorTrack.selectNext();
+
    }
 
    public void moveTrackDown() 
@@ -467,6 +505,7 @@ public class AtomSQExtension extends ControllerExtension
       nextTrack.afterTrackInsertionPoint().moveTracks(mCursorTrack);
       mCursorTrack.selectPrevious();
       mCursorTrack.selectNext();
+
    }
  
      ////////////////////////
@@ -486,6 +525,8 @@ public class AtomSQExtension extends ControllerExtension
       mUserLayer = createLayer("User");
       mShiftLayer = createLayer ("Shift");
       mBrowserLayer = createLayer("Browser");
+      mInstEmptyLayer = createLayer("InstEmpty");
+
 
       createBaseLayer();
       createInstLayer();
@@ -496,6 +537,7 @@ public class AtomSQExtension extends ControllerExtension
       createShiftLayer();
       createSong2Layer();
       createBrowserLayer();
+      createInstEmptyLayer();
 
       // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
    }
@@ -606,8 +648,14 @@ public class AtomSQExtension extends ControllerExtension
          });
       
       mBaseLayer.bindPressed(mInstButton, () -> {
+         //v1.1 adding logic for empty layer
+         if(mCursorDevice.exists().getAsBoolean()){
          activateLayer(mInstLayer, null);
          DM.InstMode();
+         }
+         else{activateLayer(mInstEmptyLayer, null);};
+         DM.InstEmptyMode();
+
          });
 
       mBaseLayer.bindPressed(mEditorButton, () -> {
@@ -736,8 +784,8 @@ public class AtomSQExtension extends ControllerExtension
       {
          final Parameter parameter = mRemoteControls.getParameter(i);
          final RelativeHardwareKnob encoder = mEncoders[i];
-
          mInstLayer.bind(encoder, parameter);
+       
       }
    }
 
@@ -756,6 +804,23 @@ public class AtomSQExtension extends ControllerExtension
       mInst2Layer.bindPressed(m6Button, () -> {mCursorDevice.afterDeviceInsertionPoint().browse();});
    }
 
+   //V1.1 adding new layer for when Track has no devices
+    private void createInstEmptyLayer()
+   {
+      //this turns lights on and off. 
+      mInstEmptyLayer.bind(() -> false, mBackButton);
+      mInstEmptyLayer.bind(() -> false, mForwardButton);
+      mInstEmptyLayer.bind(() -> true, mInstButton);
+
+      //V1.1 The light-on indicator is not ideal...maybe there is a prettier way than cursor track?
+      mInstEmptyLayer.bindToggle(m1Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
+      mInstEmptyLayer.bindToggle(m2Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
+      mInstEmptyLayer.bindToggle(m3Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
+      mInstEmptyLayer.bindToggle(m4Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
+      mInstEmptyLayer.bindToggle(m5Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
+      mInstEmptyLayer.bindToggle(m6Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
+   }
+
    private void createEditLayer()
    {
       mEditLayer.bind(() -> true, mEditorButton);
@@ -768,31 +833,31 @@ public class AtomSQExtension extends ControllerExtension
 
    }
   
- private void createBrowserLayer()
-   {
-      final HardwareActionBindable inc4 = mHost.createAction(() ->  mBrowserCategory.selectNext(),  () -> "+");
-      final HardwareActionBindable dec4 = mHost.createAction(() -> mBrowserCategory.selectPrevious(),  () -> "-");
-      mBrowserLayer.bind(mEncoders[4], mHost.createRelativeHardwareControlStepTarget(inc4, dec4));
+   private void createBrowserLayer()
+      {
+         final HardwareActionBindable inc4 = mHost.createAction(() ->  mBrowserCategory.selectNext(),  () -> "+");
+         final HardwareActionBindable dec4 = mHost.createAction(() -> mBrowserCategory.selectPrevious(),  () -> "-");
+         mBrowserLayer.bind(mEncoders[4], mHost.createRelativeHardwareControlStepTarget(inc4, dec4));
 
-      final HardwareActionBindable inc5 = mHost.createAction(() ->  mBrowserTag.selectNext(),  () -> "+");
-      final HardwareActionBindable dec5 = mHost.createAction(() -> mBrowserTag.selectPrevious(),  () -> "-");
-      mBrowserLayer.bind(mEncoders[5], mHost.createRelativeHardwareControlStepTarget(inc5, dec5));
+         final HardwareActionBindable inc5 = mHost.createAction(() ->  mBrowserTag.selectNext(),  () -> "+");
+         final HardwareActionBindable dec5 = mHost.createAction(() -> mBrowserTag.selectPrevious(),  () -> "-");
+         mBrowserLayer.bind(mEncoders[5], mHost.createRelativeHardwareControlStepTarget(inc5, dec5));
 
-      final HardwareActionBindable inc6 = mHost.createAction(() ->  mBrowserCreator.selectNext(),  () -> "+");
-      final HardwareActionBindable dec6 = mHost.createAction(() -> mBrowserCreator.selectPrevious(),  () -> "-");
-      mBrowserLayer.bind(mEncoders[6], mHost.createRelativeHardwareControlStepTarget(inc6, dec6));
+         final HardwareActionBindable inc6 = mHost.createAction(() ->  mBrowserCreator.selectNext(),  () -> "+");
+         final HardwareActionBindable dec6 = mHost.createAction(() -> mBrowserCreator.selectPrevious(),  () -> "-");
+         mBrowserLayer.bind(mEncoders[6], mHost.createRelativeHardwareControlStepTarget(inc6, dec6));
 
-      final HardwareActionBindable inc7 = mHost.createAction(() ->  mBrowserResult.selectNext(),  () -> "+");
-      final HardwareActionBindable dec7 = mHost.createAction(() -> mBrowserResult.selectPrevious(),  () -> "-");
-      mBrowserLayer.bind(mEncoders[7], mHost.createRelativeHardwareControlStepTarget(inc7, dec7));
+         final HardwareActionBindable inc7 = mHost.createAction(() ->  mBrowserResult.selectNext(),  () -> "+");
+         final HardwareActionBindable dec7 = mHost.createAction(() -> mBrowserResult.selectPrevious(),  () -> "-");
+         mBrowserLayer.bind(mEncoders[7], mHost.createRelativeHardwareControlStepTarget(inc7, dec7));
 
-      mBrowserLayer.bindToggle(m4Button, mPopupBrowser.shouldAudition(), mPopupBrowser.shouldAudition());
-      mBrowserLayer.bindPressed(m5Button, mPopupBrowser.cancelAction());
-      mBrowserLayer.bindPressed(m6Button, mPopupBrowser.commitAction());
+         mBrowserLayer.bindToggle(m4Button, mPopupBrowser.shouldAudition(), mPopupBrowser.shouldAudition());
+         mBrowserLayer.bindPressed(m5Button, mPopupBrowser.cancelAction());
+         mBrowserLayer.bindPressed(m6Button, mPopupBrowser.commitAction());
 
-   }  
+      }  
 
-private void startPresetBrowsing()
+   private void startPresetBrowsing()
 {
    if (mCursorDevice.exists().get())
    {
@@ -822,8 +887,24 @@ private void startPresetBrowsing()
 
       //Flush actions
       mHardwareSurface.updateHardware();
+
+      //v1.1 adding flush to refresh to Inst if track is no longer empty
+if(mCursorDevice.exists().getAsBoolean() && mInstEmptyLayer.isActive()){ 
+         mHost.println("mDevice no longer empty");
+         activateLayer(mInstLayer,null);
+         DM.InstMode();
+      }
+      if((mInstLayer.isActive() || mInst2Layer.isActive()) && !mCursorDevice.exists().getAsBoolean()){ 
+         mHost.println("mDevice is now empty");
+         activateLayer(mInstEmptyLayer,null);
+         DM.InstEmptyMode();
+      } 
+
+
       DM.updateDisplay();
       getactiveLayers(mLayers);
+
+      
 
       //Layer Troubleshooting infos
       //   mActiveLayers.clear();
@@ -913,7 +994,7 @@ private void startPresetBrowsing()
          super.activeLayersChanged();
       }
    }; 
-   public Layer mBaseLayer, mInstLayer, mSongLayer, mSong2Layer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer;
+   public Layer mBaseLayer, mInstLayer, mSongLayer, mSong2Layer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer, mInstEmptyLayer;
    private Layer mLastLayer;
    //final int mLayersCount = mLayers.getLayers().size();
    final List<Layer> mLayerList = mLayers.getLayers();

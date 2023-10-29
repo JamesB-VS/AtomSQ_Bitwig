@@ -43,6 +43,7 @@ public class HardwareHandler
     public final  int  CC_BACK      =42;
     public final  int  CC_FORWARD    =43;
     public final  int  CC_ENCODER_9     =29;
+    
     //device name, note on, note off, pressure, ribbon, pitchbend
     public final String  DEV_NAME      = "Keyboard";
     public final  String  NOTE_ON       = "99????";
@@ -50,6 +51,17 @@ public class HardwareHandler
     public final  String  NOTE_PRES     = "a9????"; //poly aftertouch
     public final  String  NOTE_MOD      = "b001??";
     public final  String  NOTE_BEND     = "e0????";
+
+
+/*     //Midi Channel 2 Input test!
+        //device name, note on, note off, pressure, ribbon, pitchbend
+    public final String  DEV_NAME      = "Keyboard";
+    public final  String  NOTE_ON       = "91????";
+    public final  String  NOTE_OFF      = "81????";
+    public final  String  NOTE_PRES     = "a1????"; //poly aftertouch
+    public final  String  NOTE_MOD      = "b101??";
+    public final  String  NOTE_BEND     = "e1????"; */
+
     //Encoders
     public final  int  CC_ENCODER_1     = 14;
     //Enc 2-8 not needed because the encoders are created in an iteration below. 

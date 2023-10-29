@@ -30,6 +30,9 @@ public class DisplayMode
    private Layer dBrowserLayer;
    public CursorBrowserResultItem dBrowserResult;
    private Application dApplication;
+   //V1.1
+   private Layer dInstEmptyLayer;
+
 
    public void start(AtomSQExtension Ext)
    {
@@ -42,12 +45,38 @@ public class DisplayMode
       dCursorTrack = dASQCE.mCursorTrack;
       dCursorDevice = dASQCE.mCursorDevice;
       dBrowserResult = dASQCE.mBrowserResult;
+      //V1.1
+      dInstEmptyLayer = dASQCE.mInstEmptyLayer;
+
     }
       
    public void updateDisplay ()
    {
-      if(!dBrowserLayer.isActive())
-      {
+      if(dBrowserLayer.isActive()){
+         String pDev = dCursorDevice.name().get();
+         byte[] sysex3 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("Device: ", 8).addString(pDev, pDev.length()).terminate();
+         dMidiOut.sendSysex(sysex3);
+
+         String pTrack = dBrowserResult.name().get();
+         byte[] sysex2 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.magenta).addByte(sH.spc).addString("Preset: ", 8).addString(pTrack, pTrack.length()).terminate();
+         dMidiOut.sendSysex(sysex2);
+      }
+
+      //V1.1 adding extra case for empty, to say "add a device"
+      else if (dInstEmptyLayer.isActive()){
+         //Main line 1 
+         String pTrack = dCursorTrack.name().get();
+         byte[] sysex2 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("Track: ", 7).addString(pTrack, pTrack.length()).terminate();
+            dMidiOut.sendSysex(sysex2);
+
+         //Main line 2
+         byte[] sysex3 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.white).addByte(sH.spc).addString("Add a Device :) ", 15).terminate();
+         dMidiOut.sendSysex(sysex3);
+
+      }
+
+      else 
+            {
          //Main line 1 
          String pTrack = dCursorTrack.name().get();
          byte[] sysex2 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("Track: ", 7).addString(pTrack, pTrack.length()).terminate();
@@ -58,15 +87,8 @@ public class DisplayMode
          byte[] sysex3 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.white).addByte(sH.spc).addString("Device: ", 8).addString(pDev, pDev.length()).terminate();
          dMidiOut.sendSysex(sysex3);
       }
-      else {
-         String pDev = dCursorDevice.name().get();
-         byte[] sysex3 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("Device: ", 8).addString(pDev, pDev.length()).terminate();
-         dMidiOut.sendSysex(sysex3);
 
-         String pTrack = dBrowserResult.name().get();
-         byte[] sysex2 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.magenta).addByte(sH.spc).addString("Preset: ", 8).addString(pTrack, pTrack.length()).terminate();
-         dMidiOut.sendSysex(sysex2);
-      }
+
    }
 
    public void initHW()
@@ -137,6 +159,9 @@ public class DisplayMode
    dMidiOut.sendSysex("F0000106221301F7");
    }
  
+
+
+
    public void Song2Mode ()
    {
       //dHost.println("SongMode");
@@ -183,7 +208,39 @@ public class DisplayMode
       //turn on button light
       dMidiOut.sendSysex("F0000106221301F7");
    }
+ 
+//v1.1 Adding new mode for an empty track. only new device button
+   //changing private to public for the mode finder bits in the layer change above
+public void InstEmptyMode ()
+   {
+   dHost.showPopupNotification("Devices");
+      dApplication.focusPanelBelow();
+      //dHost.println("InstMode");
+      //dHost.showPopupNotification("Instrument Mode");
+      //dApplication.setPanelLayout("ARRANGE");
+
+      //configure display
+      dMidiOut.sendSysex("F0000106221300F7");
+      dMidiOut.sendSysex("F0000106221400F7");
    
+      //button titles
+      String[] mTitles= {"New Dev","New Dev","New Dev","New Dev","New Dev","New Dev",};
+      for (int i = 0; i < 6; i++) 
+      {
+         final String msg = mTitles[i];
+         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
+         dMidiOut.sendSysex(sysex);
+      }
+
+      // Encoder 9...must recenter it? 00 and 127 have no other visible effect.
+      dMidiOut.sendMidi(176, 29, 00);
+
+      //turn on button light
+      dMidiOut.sendSysex("F0000106221301F7");
+   }
+
+
+
     public void Inst2Mode ()
     {
        //dHost.println("InstMode");
