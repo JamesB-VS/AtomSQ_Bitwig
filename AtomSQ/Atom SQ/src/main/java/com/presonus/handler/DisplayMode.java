@@ -185,7 +185,7 @@ public class DisplayMode
    {
    dHost.showPopupNotification("Devices");
       dApplication.focusPanelBelow();
-      //dHost.println("InstMode");
+      dHost.println("InstMode");
       //dHost.showPopupNotification("Instrument Mode");
       //dApplication.setPanelLayout("ARRANGE");
 
@@ -215,7 +215,7 @@ public void InstEmptyMode ()
    {
    dHost.showPopupNotification("Devices");
       dApplication.focusPanelBelow();
-      //dHost.println("InstMode");
+      dHost.println("InstEmptyMode");
       //dHost.showPopupNotification("Instrument Mode");
       //dApplication.setPanelLayout("ARRANGE");
 

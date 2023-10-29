@@ -218,25 +218,27 @@ public class AtomSQExtension extends ControllerExtension
             if (mLastLayer == mSong2Layer){DM.Song2Mode();}
             if (mLastLayer == mEditLayer){DM.EditMode();}
             if (mLastLayer == mUserLayer){DM.UserMode();}
+            //V1.1 adding for new layer
+            if (mLastLayer == mInstEmptyLayer){DM.InstEmptyMode();}
          }
             
       });
 
-/*       //V1.1 assignment of default cursor device, so the empty screen does not appear on startup
+      //V1.1 assignment of default cursor device, so the empty screen does not appear on startup
       mCursorDevice.selectFirst();
-      String mdname= mCursorDevice.name().toString();
-      mHost.println("mCursorDevice is currently " +mdname); */
+      String mdname = mCursorDevice.name().get();
+      mHost.println("INIT: mCursorDevice is currently " +mdname);
 
 
       //these HAVE to stay at the bottom! this does allow the package file to use "this" to access the variable tho!
       DM.start(this);
       DM.initHW();
-      DM.InstMode();
+      //DM.InstMode();
 
       //mLastLayer must be the layer you intend to start with. if you set it to Base, odd shit happens. So we are priming the variable here. 
       mLastLayer = mInstLayer;
       activateLayer(mInstLayer, null);
-      mHost.println("Init complete");
+      mHost.println("INIT: complete");
 
       //Notifications      
       mHost.showPopupNotification("Atom SQ Initialized");
@@ -557,7 +559,7 @@ public class AtomSQExtension extends ControllerExtension
       for (Layer sts : mActiveLayers)
       {
          String stsname = sts.getName().toString();
-         mHost.println("layer to evaluate: "+stsname);
+         //mHost.println("layer to evaluate: "+stsname);
          //moved the last layer functionality out of flush so it can indicate the previous layer in activateLayer()
          if (stsname == "Browser"){continue;} 
          else if (stsname == "Shift") {continue;} 
@@ -577,7 +579,12 @@ public class AtomSQExtension extends ControllerExtension
          else if (alayer == layer){
             mHost.println("activating layer: "+alayername);
             alayer.activate();}
-         else {alayer.deactivate();}
+         else {alayer.deactivate();
+            //V1.1 troubleshooting for ensuring the layer is actually deactivated
+            if(!alayer.isActive()){
+               mHost.println(alayername+" deactivated");
+            };
+         }
       }
    }
 
@@ -653,8 +660,9 @@ public class AtomSQExtension extends ControllerExtension
          activateLayer(mInstLayer, null);
          DM.InstMode();
          }
-         else{activateLayer(mInstEmptyLayer, null);};
+         else{activateLayer(mInstEmptyLayer, null);
          DM.InstEmptyMode();
+         };
 
          });
 
@@ -771,6 +779,11 @@ public class AtomSQExtension extends ControllerExtension
 
    private void createInstLayer()
    {
+      //V1.1 trying to get mCursorDevice to update, so the layer doesn't switch directly after Init, or when switching focus to Tracks
+      String mdname = mCursorDevice.name().get();
+      mHost.println("Inst Layer: mCursorDevice is currently " +mdname);
+
+
       //this turns lights on and off. 
       mInstLayer.bind(() -> true, mForwardButton);
       mInstLayer.bind(() -> true, mInstButton);
@@ -816,13 +829,24 @@ public class AtomSQExtension extends ControllerExtension
       mInstEmptyLayer.bind(() -> false, mForwardButton);
       mInstEmptyLayer.bind(() -> true, mInstButton);
 
+ 
       //V1.1 The light-on indicator is not ideal...maybe there is a prettier way than cursor track?
-      mInstEmptyLayer.bindToggle(m1Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
-      mInstEmptyLayer.bindToggle(m2Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
-      mInstEmptyLayer.bindToggle(m3Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
-      mInstEmptyLayer.bindToggle(m4Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
-      mInstEmptyLayer.bindToggle(m5Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
-      mInstEmptyLayer.bindToggle(m6Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
+      mInstEmptyLayer.bindPressed(m1Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();});
+      mInstEmptyLayer.bindPressed(m2Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();});
+      mInstEmptyLayer.bindPressed(m3Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();});
+      mInstEmptyLayer.bindPressed(m4Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();});
+      mInstEmptyLayer.bindPressed(m5Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();});
+      mInstEmptyLayer.bindPressed(m6Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();});
+
+      // //V1.1 The light-on indicator is not ideal...maybe there is a prettier way than cursor track?
+      // mInstEmptyLayer.bindToggle(m1Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
+      // mInstEmptyLayer.bindToggle(m2Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
+      // mInstEmptyLayer.bindToggle(m3Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
+      // mInstEmptyLayer.bindToggle(m4Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
+      // mInstEmptyLayer.bindToggle(m5Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
+      // mInstEmptyLayer.bindToggle(m6Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();},mCursorTrack.exists() );
+
+
    }
 
    private void createEditLayer()
@@ -897,23 +921,30 @@ public class AtomSQExtension extends ControllerExtension
       mHost.println("FLUSH INFO:");
 
       //Flush actions
-      mHardwareSurface.updateHardware();
 
+      //V1.1 troubleshooting for display mode issues
+      String mcdname = mCursorDevice.name().get();
+      mHost.println("mCursorDevice is: "+mcdname);
+
+      Boolean mcdexists = mCursorDevice.exists().getAsBoolean();
+      mHost.println("mCursorDevice exists: "+mcdexists);
+
+      getactiveLayers(mLayers);
       //v1.1 adding flush to refresh to Inst if track is no longer empty
-if(mCursorDevice.exists().getAsBoolean() && mInstEmptyLayer.isActive()){ 
-         mHost.println("mDevice no longer empty");
+   if(mCursorDevice.exists().getAsBoolean() && mInstEmptyLayer.isActive()){ 
+         mHost.println("FLUSH: mDevice no longer empty");
          activateLayer(mInstLayer,null);
          DM.InstMode();
       }
-      if((mInstLayer.isActive() || mInst2Layer.isActive()) && !mCursorDevice.exists().getAsBoolean()){ 
-         mHost.println("mDevice is now empty");
+   if((mInstLayer.isActive() || mInst2Layer.isActive()) && !mCursorDevice.exists().getAsBoolean()){ 
+         mHost.println("FLUSH: mDevice is now empty");
          activateLayer(mInstEmptyLayer,null);
          DM.InstEmptyMode();
       } 
 
-
+      mHardwareSurface.updateHardware();
       DM.updateDisplay();
-      getactiveLayers(mLayers);
+
 
       
 
