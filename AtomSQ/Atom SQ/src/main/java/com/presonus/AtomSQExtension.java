@@ -122,6 +122,16 @@ public class AtomSQExtension extends ControllerExtension
       mBrowserCreator.exists().markInterested();
       mBrowserTag.exists().markInterested();
       mBrowserResult.name().markInterested();
+
+      //V1.1 Preset Browser
+      mBrowserLocation = (CursorBrowserFilterItem) mPopupBrowser.locationColumn().createCursorItem();
+      mBrowserLocation.exists().markInterested();
+      mBrowserFileType = (CursorBrowserFilterItem) mPopupBrowser.fileTypeColumn().createCursorItem();
+      mBrowserFileType.exists().markInterested();
+      mBrowserFavorites = (CursorBrowserFilterItem) mPopupBrowser.smartCollectionColumn().createCursorItem();
+      mBrowserFavorites.exists().markInterested();
+      mBrowserDevType = (CursorBrowserFilterItem) mPopupBrowser.deviceColumn().createCursorItem();
+      mBrowserDevType.exists().markInterested();
      
       mCDLDBnk = mCursorTrack.createDeviceBank(3);
       mCDLDBnk.canScrollBackwards().markInterested();
@@ -863,18 +873,44 @@ public class AtomSQExtension extends ControllerExtension
   
    private void createBrowserLayer()
       {
+         //V1.1 Preset Browser: adding controls for all the menu options
+
+         //Encoder 1
+         final HardwareActionBindable inc0 = mHost.createAction(() ->  mBrowserFavorites.selectNext(),  () -> "+");
+         final HardwareActionBindable dec0= mHost.createAction(() -> mBrowserFavorites.selectPrevious(),  () -> "-");
+         mBrowserLayer.bind(mEncoders[0], mHost.createRelativeHardwareControlStepTarget(inc0, dec0));
+         
+         //Encoder 2
+         final HardwareActionBindable inc1 = mHost.createAction(() ->  mBrowserDevType.selectNext(),  () -> "+");
+         final HardwareActionBindable dec1 = mHost.createAction(() -> mBrowserDevType.selectPrevious(),  () -> "-");
+         mBrowserLayer.bind(mEncoders[1], mHost.createRelativeHardwareControlStepTarget(inc1, dec1));
+         
+         //Encoder 3
+         final HardwareActionBindable inc2 = mHost.createAction(() ->  mBrowserLocation.selectNext(),  () -> "+");
+         final HardwareActionBindable dec2 = mHost.createAction(() -> mBrowserLocation.selectPrevious(),  () -> "-");
+         mBrowserLayer.bind(mEncoders[2], mHost.createRelativeHardwareControlStepTarget(inc2, dec2));
+
+         //Encoder 4
+         final HardwareActionBindable inc3 = mHost.createAction(() ->  mBrowserFileType.selectNext(),  () -> "+");
+         final HardwareActionBindable dec3 = mHost.createAction(() -> mBrowserFileType.selectPrevious(),  () -> "-");
+         mBrowserLayer.bind(mEncoders[3], mHost.createRelativeHardwareControlStepTarget(inc3, dec3));
+
+         //Encoder 5
          final HardwareActionBindable inc4 = mHost.createAction(() ->  mBrowserCategory.selectNext(),  () -> "+");
          final HardwareActionBindable dec4 = mHost.createAction(() -> mBrowserCategory.selectPrevious(),  () -> "-");
          mBrowserLayer.bind(mEncoders[4], mHost.createRelativeHardwareControlStepTarget(inc4, dec4));
 
+         //Encoder 6
          final HardwareActionBindable inc5 = mHost.createAction(() ->  mBrowserTag.selectNext(),  () -> "+");
          final HardwareActionBindable dec5 = mHost.createAction(() -> mBrowserTag.selectPrevious(),  () -> "-");
          mBrowserLayer.bind(mEncoders[5], mHost.createRelativeHardwareControlStepTarget(inc5, dec5));
 
+         //Encoder 7
          final HardwareActionBindable inc6 = mHost.createAction(() ->  mBrowserCreator.selectNext(),  () -> "+");
          final HardwareActionBindable dec6 = mHost.createAction(() -> mBrowserCreator.selectPrevious(),  () -> "-");
          mBrowserLayer.bind(mEncoders[6], mHost.createRelativeHardwareControlStepTarget(inc6, dec6));
 
+         //Encoder 8
          final HardwareActionBindable inc7 = mHost.createAction(() ->  mBrowserResult.selectNext(),  () -> "+");
          final HardwareActionBindable dec7 = mHost.createAction(() -> mBrowserResult.selectPrevious(),  () -> "-");
          mBrowserLayer.bind(mEncoders[7], mHost.createRelativeHardwareControlStepTarget(inc7, dec7));
@@ -1005,11 +1041,20 @@ public class AtomSQExtension extends ControllerExtension
    public CursorTrack mCursorTrack;
    private  DeviceBank mCDLDBnk;
    private TrackBank mTrackBank;
+
    public PopupBrowser mPopupBrowser;
    public CursorBrowserResultItem mBrowserResult;
    private CursorBrowserFilterItem mBrowserCategory;
    private CursorBrowserFilterItem mBrowserCreator;
    private CursorBrowserFilterItem mBrowserTag;
+   //V1.1 New
+   private CursorBrowserFilterItem mBrowserFavorites;
+   private CursorBrowserFilterItem mBrowserDevType;
+   private CursorBrowserFilterItem mBrowserLocation;
+   private CursorBrowserFilterItem mBrowserFileType;
+   
+
+
    private DisplayMode DM;
    public ControllerHost mHost;
    private static HardwareHandler hH = new HardwareHandler();
