@@ -32,6 +32,7 @@ import com.bitwig.extension.controller.api.Parameter;
 import com.bitwig.extension.controller.api.RelativeHardwareKnob;
 import com.bitwig.extension.controller.api.Transport;
 import com.bitwig.extension.controller.api.SendBank;
+import com.bitwig.extension.controller.api.SettableRangedValue;
 import com.bitwig.extension.controller.api.Track;
 import com.bitwig.extension.controller.api.TrackBank;
 import com.bitwig.extension.controller.api.MasterTrack;
@@ -39,14 +40,14 @@ import com.bitwig.extension.controller.api.HardwareActionBindable;
 import com.bitwig.extension.controller.api.DeviceBank;
 import com.bitwig.extension.controller.api.Device;
 import com.bitwig.extension.controller.api.PopupBrowser;
-
+import com.bitwig.extension.controller.api.RelativeHardwarControlBindable;
 //Bitwig Framework components
 import com.bitwig.extensions.framework.Layer;
 import com.bitwig.extensions.framework.Layers;
 
 //Local components
 import com.presonus.handler.DisplayMode;
-import com.presonus.handler.HardwareHandler;;
+import com.presonus.handler.HardwareHandler;
 public class AtomSQExtension extends ControllerExtension
 {
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
@@ -208,6 +209,10 @@ public class AtomSQExtension extends ControllerExtension
       //TODO this does not have any effect it seems. Still need to force the app to select the first track on start to get the ball rolling.
       mApplication.selectFirst();
       
+      //V1.1 attempt to extract the encoder functions
+      createBrowserTargets();
+
+
       //Layers
       initLayers(); 
     
@@ -233,6 +238,8 @@ public class AtomSQExtension extends ControllerExtension
          }
             
       });
+      
+
 
       //V1.1 assignment of default cursor device, so the empty screen does not appear on startup
       mCursorDevice.selectFirst();
@@ -258,6 +265,8 @@ public class AtomSQExtension extends ControllerExtension
      ////////////////////////
     //  Hardware Surface  //
    ////////////////////////
+
+
 
    private void inithardwareSurface(ControllerHost mHost)
    {
@@ -520,6 +529,45 @@ public class AtomSQExtension extends ControllerExtension
 
    }
  
+//V1.1 preset
+//this is an abstraction of the old browser layer. This should allow for easier layer creation, as each of the diff configs has diff columns. 
+   public void createBrowserTargets() {
+      inc0 = mHost.createAction(() ->  mBrowserFavorites.selectNext(),  () -> "+");
+      dec0 = mHost.createAction(() -> mBrowserFavorites.selectPrevious(),  () -> "-");
+      RHCBsmartfolders = mHost.createRelativeHardwareControlStepTarget(inc0, dec0);
+
+      inc1 = mHost.createAction(() ->  mBrowserDevType.selectNext(),  () -> "+");
+      dec1 = mHost.createAction(() -> mBrowserDevType.selectPrevious(),  () -> "-");
+      RHCBdevices = mHost.createRelativeHardwareControlStepTarget(inc1, dec1);
+
+      inc2 = mHost.createAction(() ->  mBrowserLocation.selectNext(),  () -> "+");
+      dec2 = mHost.createAction(() -> mBrowserLocation.selectPrevious(),  () -> "-");
+      RHCBlocations = mHost.createRelativeHardwareControlStepTarget(inc2, dec2);
+
+      inc3 = mHost.createAction(() ->  mBrowserFileType.selectNext(),  () -> "+");
+      dec3 = mHost.createAction(() -> mBrowserFileType.selectPrevious(),  () -> "-");
+      RHCBfiletype = mHost.createRelativeHardwareControlStepTarget(inc3, dec3);
+
+      inc4 = mHost.createAction(() ->  mBrowserCategory.selectNext(),  () -> "+");
+      dec4 = mHost.createAction(() -> mBrowserCategory.selectPrevious(),  () -> "-");
+      RHCBcategory = mHost.createRelativeHardwareControlStepTarget(inc4, dec4);
+
+      inc5 = mHost.createAction(() ->  mBrowserTag.selectNext(),  () -> "+");
+      dec5 = mHost.createAction(() -> mBrowserTag.selectPrevious(),  () -> "-");
+      RHCBtags = mHost.createRelativeHardwareControlStepTarget(inc5, dec5);
+
+      inc6 = mHost.createAction(() ->  mBrowserCreator.selectNext(),  () -> "+");
+      dec6 = mHost.createAction(() -> mBrowserCreator.selectPrevious(),  () -> "-");
+      RHCBcreator = mHost.createRelativeHardwareControlStepTarget(inc6, dec6);
+
+      inc7 = mHost.createAction(() ->  mBrowserResult.selectNext(),  () -> "+");
+      dec7 = mHost.createAction(() -> mBrowserResult.selectPrevious(),  () -> "-");
+      RHCBresult = mHost.createRelativeHardwareControlStepTarget(inc7, dec7);
+
+
+         }
+
+
      ////////////////////////
     //       Layers       //
    ////////////////////////
@@ -873,54 +921,59 @@ public class AtomSQExtension extends ControllerExtension
   
    private void createBrowserLayer()
       {
-         //V1.1 Preset Browser: adding controls for all the menu options
-
-         //Encoder 1
-         final HardwareActionBindable inc0 = mHost.createAction(() ->  mBrowserFavorites.selectNext(),  () -> "+");
-         final HardwareActionBindable dec0= mHost.createAction(() -> mBrowserFavorites.selectPrevious(),  () -> "-");
-         mBrowserLayer.bind(mEncoders[0], mHost.createRelativeHardwareControlStepTarget(inc0, dec0));
-         
-         //Encoder 2
-         final HardwareActionBindable inc1 = mHost.createAction(() ->  mBrowserDevType.selectNext(),  () -> "+");
-         final HardwareActionBindable dec1 = mHost.createAction(() -> mBrowserDevType.selectPrevious(),  () -> "-");
-         mBrowserLayer.bind(mEncoders[1], mHost.createRelativeHardwareControlStepTarget(inc1, dec1));
-         
-         //Encoder 3
-         final HardwareActionBindable inc2 = mHost.createAction(() ->  mBrowserLocation.selectNext(),  () -> "+");
-         final HardwareActionBindable dec2 = mHost.createAction(() -> mBrowserLocation.selectPrevious(),  () -> "-");
-         mBrowserLayer.bind(mEncoders[2], mHost.createRelativeHardwareControlStepTarget(inc2, dec2));
-
-         //Encoder 4
-         final HardwareActionBindable inc3 = mHost.createAction(() ->  mBrowserFileType.selectNext(),  () -> "+");
-         final HardwareActionBindable dec3 = mHost.createAction(() -> mBrowserFileType.selectPrevious(),  () -> "-");
-         mBrowserLayer.bind(mEncoders[3], mHost.createRelativeHardwareControlStepTarget(inc3, dec3));
-
-         //Encoder 5
-         final HardwareActionBindable inc4 = mHost.createAction(() ->  mBrowserCategory.selectNext(),  () -> "+");
-         final HardwareActionBindable dec4 = mHost.createAction(() -> mBrowserCategory.selectPrevious(),  () -> "-");
-         mBrowserLayer.bind(mEncoders[4], mHost.createRelativeHardwareControlStepTarget(inc4, dec4));
-
-         //Encoder 6
-         final HardwareActionBindable inc5 = mHost.createAction(() ->  mBrowserTag.selectNext(),  () -> "+");
-         final HardwareActionBindable dec5 = mHost.createAction(() -> mBrowserTag.selectPrevious(),  () -> "-");
-         mBrowserLayer.bind(mEncoders[5], mHost.createRelativeHardwareControlStepTarget(inc5, dec5));
-
-         //Encoder 7
-         final HardwareActionBindable inc6 = mHost.createAction(() ->  mBrowserCreator.selectNext(),  () -> "+");
-         final HardwareActionBindable dec6 = mHost.createAction(() -> mBrowserCreator.selectPrevious(),  () -> "-");
-         mBrowserLayer.bind(mEncoders[6], mHost.createRelativeHardwareControlStepTarget(inc6, dec6));
-
-         //Encoder 8
-         final HardwareActionBindable inc7 = mHost.createAction(() ->  mBrowserResult.selectNext(),  () -> "+");
-         final HardwareActionBindable dec7 = mHost.createAction(() -> mBrowserResult.selectPrevious(),  () -> "-");
-         mBrowserLayer.bind(mEncoders[7], mHost.createRelativeHardwareControlStepTarget(inc7, dec7));
-
          mBrowserLayer.bindToggle(m4Button, mPopupBrowser.shouldAudition(), mPopupBrowser.shouldAudition());
          mBrowserLayer.bindPressed(m5Button, mPopupBrowser.cancelAction());
          mBrowserLayer.bindPressed(m6Button, mPopupBrowser.commitAction());
 
-      }  
 
+         //leaving a "default" layer here for the presets page, then we only have to overwrite the changes in other smaller layers
+            //V1.1 Preset Browser: adding controls for all the menu options
+
+         //Encoder 1
+         mBrowserLayer.bind(mEncoders[0], RHCBsmartfolders);
+        //Encoder 2
+         //mBrowserLayer.bind(mEncoders[1], RHC);
+         //Encoder 3
+         mBrowserLayer.bind(mEncoders[2], RHCBlocations);
+         //Encoder 4
+          mBrowserLayer.bind(mEncoders[3], RHCBdevices);
+
+      //    //Encoder 5
+          mBrowserLayer.bind(mEncoders[4],RHCBcategory);
+      //    //Encoder 
+          mBrowserLayer.bind(mEncoders[5], RHCBtags);
+      //    //Encoder 7
+          mBrowserLayer.bind(mEncoders[6], RHCBcreator);
+      //    //Encoder 8
+         mBrowserLayer.bind(mEncoders[7], RHCBresult);
+
+      }  
+   
+ /*   private void createDeviceBrowserLayer()
+      {
+         //V1.1 Preset Browser: adding controls for all the menu options
+         //Encoder 1
+         mBrowserLayer.bind(mEncoders[0], RHCBsmartfolders);
+        //Encoder 2
+         //mBrowserLayer.bind(mEncoders[1], RHC);
+         //Encoder 3
+        // mBrowserLayer.bind(mEncoders[2], mHost.createRelativeHardwareControlStepTarget(inc2, dec2));
+         //Encoder 4
+         mBrowserLayer.bind(mEncoders[3], RHCBlocations);
+         //Encoder 5
+         mBrowserLayer.bind(mEncoders[4],RHCBfiletype);
+         //Encoder 
+         mBrowserLayer.bind(mEncoders[5], RHCBcategory);
+         //Encoder 7
+         mBrowserLayer.bind(mEncoders[6], RHCBcreator);
+         //Encoder 8
+         mBrowserLayer.bind(mEncoders[7], RHCBresult);
+
+
+      } */
+  
+
+      //TODO what is this really doing? can this be cleaned up with the newer browser setup?
    private void startPresetBrowsing()
 {
    if (mCursorDevice.exists().get())
@@ -1086,5 +1139,35 @@ public class AtomSQExtension extends ControllerExtension
    //final int mLayersCount = mLayers.getLayers().size();
    final List<Layer> mLayerList = mLayers.getLayers();
    final List<Layer> mActiveLayers = new ArrayList<>();
+
+//V1.1 Preset Browser
+public HardwareActionBindable inc0;
+public HardwareActionBindable dec0;
+public HardwareActionBindable inc1;
+public HardwareActionBindable dec1;
+public HardwareActionBindable inc2;
+public HardwareActionBindable dec2;
+public HardwareActionBindable inc3;
+public HardwareActionBindable dec3;
+public HardwareActionBindable inc4;
+public HardwareActionBindable dec4;
+public HardwareActionBindable inc5;
+public HardwareActionBindable dec5;
+public HardwareActionBindable inc6;
+public HardwareActionBindable dec6;
+public HardwareActionBindable inc7;
+public HardwareActionBindable dec7;
+
+public RelativeHardwarControlBindable RHCBsmartfolders; 
+public RelativeHardwarControlBindable RHCBtags; 
+public RelativeHardwarControlBindable RHCBcreator; 
+public RelativeHardwarControlBindable RHCBcategory; 
+public RelativeHardwarControlBindable RHCBdevices; 
+public RelativeHardwarControlBindable RHCBlocations; 
+public RelativeHardwarControlBindable RHCBfiletype; 
+public RelativeHardwarControlBindable RHCBresult; 
+
+
+
 
 }
