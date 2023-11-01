@@ -925,26 +925,23 @@ public class AtomSQExtension extends ControllerExtension
          mBrowserLayer.bindPressed(m5Button, mPopupBrowser.cancelAction());
          mBrowserLayer.bindPressed(m6Button, mPopupBrowser.commitAction());
 
-
          //leaving a "default" layer here for the presets page, then we only have to overwrite the changes in other smaller layers
-            //V1.1 Preset Browser: adding controls for all the menu options
-
+         //V1.1 Preset Browser: adding controls for all the menu options
          //Encoder 1
          mBrowserLayer.bind(mEncoders[0], RHCBsmartfolders);
-        //Encoder 2
+         //Encoder 2
          //mBrowserLayer.bind(mEncoders[1], RHC);
          //Encoder 3
          mBrowserLayer.bind(mEncoders[2], RHCBlocations);
          //Encoder 4
-          mBrowserLayer.bind(mEncoders[3], RHCBdevices);
-
-      //    //Encoder 5
-          mBrowserLayer.bind(mEncoders[4],RHCBcategory);
-      //    //Encoder 
-          mBrowserLayer.bind(mEncoders[5], RHCBtags);
-      //    //Encoder 7
-          mBrowserLayer.bind(mEncoders[6], RHCBcreator);
-      //    //Encoder 8
+         mBrowserLayer.bind(mEncoders[3], RHCBdevices);
+         //Encoder 5
+         mBrowserLayer.bind(mEncoders[4],RHCBcategory);
+         //Encoder 
+         mBrowserLayer.bind(mEncoders[5], RHCBtags);
+         //Encoder 7
+         mBrowserLayer.bind(mEncoders[6], RHCBcreator);
+         //Encoder 8
          mBrowserLayer.bind(mEncoders[7], RHCBresult);
 
       }  
