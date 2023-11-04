@@ -618,7 +618,7 @@ public class AtomSQExtension extends ControllerExtension
       mDeviceBrowserLayer = createLayer("DeviceBrowser");
       mMultiBrowserLayer = createLayer("MultiBrowser");
       mSamplesBrowserLayer = createLayer("SamplesBrowser");
-      mPresetBrowserLayer = createLayer("PresetBrowserLayer");
+      mPresetBrowserLayer = createLayer("PresetBrowser");
 
       createBaseLayer();
       createInstLayer();
@@ -663,6 +663,7 @@ public class AtomSQExtension extends ControllerExtension
          // else if (stsname == "Base") {continue;} 
          // else {mLastLayer = sts;}
          //V1.1 Preset Browser. changing to a switch, is easier to read and write.
+         //it would be sweet to do this with the layers instead of thenames, but switch cannot do that.
          switch (stsname){
             case "Shift": continue;
             case "Browser": continue;
