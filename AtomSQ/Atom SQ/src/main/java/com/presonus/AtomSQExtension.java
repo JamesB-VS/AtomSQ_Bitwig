@@ -140,9 +140,6 @@ public class AtomSQExtension extends ControllerExtension
       mBrowserDevType = (CursorBrowserFilterItem) mPopupBrowser.deviceColumn().createCursorItem();
       mBrowserDevType.exists().markInterested();
      
-
-
-
       mCDLDBnk = mCursorTrack.createDeviceBank(3);
       mCDLDBnk.canScrollBackwards().markInterested();
       mCDLDBnk.canScrollForwards().markInterested();
@@ -232,27 +229,28 @@ public class AtomSQExtension extends ControllerExtension
          {
             DM.BrowserMode();
             activateLayer(mBrowserLayer, null);
-           // mBrowserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
-           mBrowserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
-           mBrowserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
-           mHost.println("browsermode activated, type should be: "+mBrowserlayercontentname);
-           mHost.println("browsermode activated, typeindex should be: "+mBrowserlayercontentindex);
-            
+
+         //   mHost.println("browsermode activated, type should be: "+mBrowserlayercontentname);
+         //   mHost.println("browsermode activated, typeindex should be: "+mBrowserlayercontentindex);
+/*             
            if (mBrowserlayercontentindex == 0) {
             activateLayer(mDeviceBrowserLayer, mBrowserLayer);
             mHost.println("type is: "+mBrowserlayercontentname);
             }
-            // else{
-            //    mDeviceBrowserLayer.deactivate();
-            //    mBrowserLayer.deactivate();
-            //    mHost.println("browsermodes deactivated");
-            // }
 
-       }
-      
+            else if (mBrowserlayercontentindex == 2) {activateLayer(mMultiBrowserLayer, mBrowserLayer);}
+            else if (mBrowserlayercontentindex == 3) {activateLayer(mSamplesBrowserLayer, mBrowserLayer);}
+            else if (mBrowserlayercontentindex == 4) {activateLayer(mSamplesBrowserLayer, mBrowserLayer);}
+ */
+
+         }
          else{
             mBrowserLayer.deactivate();
+            mPresetBrowserLayer.deactivate();
+            mMultiBrowserLayer.deactivate();
+            mSamplesBrowserLayer.deactivate();
             mDeviceBrowserLayer.deactivate();
+           // mDeviceBrowserLayer.deactivate();
             activateLayer(mLastLayer, null);
             //TODO this is ugly and manual, but it should work. I cannot get a good logic to do this.
             if (mLastLayer == mInstLayer){DM.InstMode();}
@@ -618,7 +616,9 @@ public class AtomSQExtension extends ControllerExtension
       mBrowserLayer = createLayer("Browser");
       mInstEmptyLayer = createLayer("InstEmpty");
       mDeviceBrowserLayer = createLayer("DeviceBrowser");
-
+      mMultiBrowserLayer = createLayer("MultiBrowser");
+      mSamplesBrowserLayer = createLayer("SamplesBrowser");
+      mPresetBrowserLayer = createLayer("PresetBrowserLayer");
 
       createBaseLayer();
       createInstLayer();
@@ -631,6 +631,9 @@ public class AtomSQExtension extends ControllerExtension
       createBrowserLayer();
       createInstEmptyLayer();
       createDeviceBrowserLayer();
+      createMultiBrowserLayer();
+      createSamplesBrowserLayer();
+      createPresetBrowserLayer();
 
 
 
@@ -655,10 +658,23 @@ public class AtomSQExtension extends ControllerExtension
          String stsname = sts.getName().toString();
          //mHost.println("layer to evaluate: "+stsname);
          //moved the last layer functionality out of flush so it can indicate the previous layer in activateLayer()
-         if (stsname == "Browser"){continue;} 
-         else if (stsname == "Shift") {continue;} 
-         else if (stsname == "Base") {continue;} 
-         else {mLastLayer = sts;}
+         // if (stsname == "Browser"){continue;} 
+         // else if (stsname == "Shift") {continue;} 
+         // else if (stsname == "Base") {continue;} 
+         // else {mLastLayer = sts;}
+         //V1.1 Preset Browser. changing to a switch, is easier to read and write.
+         switch (stsname){
+            case "Shift": continue;
+            case "Browser": continue;
+            case "Base": continue;
+            case "DeviceBrowser": continue;
+            case "PresetBrowser": continue;
+            case "MultiBrowser": continue;
+            case "SamplesBrowser": continue;
+            default: mLastLayer = sts;
+         }
+
+
       }
        
        mHost.println("previous layer is: "+mLastLayer.getName().toString());
@@ -666,7 +682,7 @@ public class AtomSQExtension extends ControllerExtension
       for(Layer alayer: mLayerList)
       { 
          String alayername = alayer.getName().toString();
-         mHost.println("iteration layer is: "+alayername);
+         //mHost.println("iteration layer is: "+alayername);
          if (alayer == mBaseLayer){continue;}
          else if (alayer == mShiftLayer){continue;}
          else if (alayer == mLeaveIt){continue;}
@@ -960,7 +976,10 @@ public class AtomSQExtension extends ControllerExtension
          mBrowserLayer.bindToggle(m4Button, mPopupBrowser.shouldAudition(), mPopupBrowser.shouldAudition());
          mBrowserLayer.bindPressed(m5Button, mPopupBrowser.cancelAction());
          mBrowserLayer.bindPressed(m6Button, mPopupBrowser.commitAction());
+      }
 
+   private void createPresetBrowserLayer()
+   {
          //leaving a "default" layer here for the presets page, then we only have to overwrite the changes in other smaller layers
          //V1.1 Preset Browser: adding controls for all the menu options
          //Encoder 1
@@ -987,22 +1006,60 @@ public class AtomSQExtension extends ControllerExtension
          //V1.1 Preset Browser: adding controls for all the menu options
          //Encoder 1
          mDeviceBrowserLayer.bind(mEncoders[0], RHCBsmartfolders);
-         //Encoder 2
-         //mDeviceBrowserLayer.bind(mEncoders[1], RHC);
          //Encoder 3
          mDeviceBrowserLayer.bind(mEncoders[2], RHCBnothing);
          //Encoder 4
          mDeviceBrowserLayer.bind(mEncoders[3], RHCBlocations);
          //Encoder 5
          mDeviceBrowserLayer.bind(mEncoders[4],RHCBfiletype);
-         //Encoder 
+         //Encoder 6
          mDeviceBrowserLayer.bind(mEncoders[5], RHCBcategory);
-         // //Encoder 7
-         // mDeviceBrowserLayer.bind(mEncoders[6], RHCBcreator);
-         // //Encoder 8
-         // mDeviceBrowserLayer.bind(mEncoders[7], RHCBresult);
+
       }
   
+   private void createMultiBrowserLayer()
+      {
+         //V1.1 Preset Browser: adding controls for all the menu options
+         //Encoder 1
+         mMultiBrowserLayer.bind(mEncoders[0], RHCBsmartfolders);
+         //Encoder 2
+         //mDeviceBrowserLayer.bind(mEncoders[1], RHC);
+         //Encoder 3
+         mMultiBrowserLayer.bind(mEncoders[2], RHCBlocations);
+         //Encoder 4
+         mMultiBrowserLayer.bind(mEncoders[3], RHCBfiletype);
+         //Encoder 5
+         mMultiBrowserLayer.bind(mEncoders[4],RHCBcategory);
+         //Encoder 
+         mMultiBrowserLayer.bind(mEncoders[5], RHCBtags);
+         //Encoder 7
+         mMultiBrowserLayer.bind(mEncoders[6], RHCBcreator);
+         //Encoder 8
+         mMultiBrowserLayer.bind(mEncoders[7], RHCBresult);
+      }
+
+   private void createSamplesBrowserLayer()
+      {
+         //V1.1 Preset Browser: adding controls for all the menu options
+         //Encoder 1
+         mSamplesBrowserLayer.bind(mEncoders[0], RHCBsmartfolders);
+         //Encoder 2
+         //mDeviceBrowserLayer.bind(mEncoders[1], RHC);
+         //Encoder 3
+         mSamplesBrowserLayer.bind(mEncoders[2], RHCBnothing);
+         //Encoder 4
+         mSamplesBrowserLayer.bind(mEncoders[3], RHCBnothing);
+         //Encoder 5
+         mSamplesBrowserLayer.bind(mEncoders[4],RHCBnothing);
+         //Encoder 
+         mSamplesBrowserLayer.bind(mEncoders[5], RHCBfiletype);
+         //Encoder 7
+         mSamplesBrowserLayer.bind(mEncoders[6], RHCBlocations);
+         //Encoder 8
+         mSamplesBrowserLayer.bind(mEncoders[7], RHCBresult);
+      }
+
+
 
       //TODO what is this really doing? can this be cleaned up with the newer browser setup?
    private void startPresetBrowsing()
@@ -1068,6 +1125,21 @@ public class AtomSQExtension extends ControllerExtension
       mBrowserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
       mHost.println("FLUSH: typeindex should be: "+mBrowserlayercontentindex);
 
+      //V1.1 Preset Browser: added this to activate layers in particular when switching when the browser is already open. 
+   if(mBrowserLayer.isActive()){
+         //        mBrowserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
+         //  mBrowserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
+         mBrowserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
+      switch(mBrowserlayercontentindex){
+         case 0: activateLayer(mDeviceBrowserLayer, mBrowserLayer); break;
+         case 1: activateLayer(mPresetBrowserLayer, mBrowserLayer);break;
+         case 2: activateLayer(mMultiBrowserLayer, mBrowserLayer);break;
+         case 3: activateLayer(mSamplesBrowserLayer, mBrowserLayer);break;
+         case 4: activateLayer(mSamplesBrowserLayer, mBrowserLayer);break;
+      }
+      
+
+   }
 
       mHardwareSurface.updateHardware();
       DM.updateDisplay();
@@ -1172,7 +1244,7 @@ public class AtomSQExtension extends ControllerExtension
          super.activeLayersChanged();
       }
    }; 
-   public Layer mBaseLayer, mInstLayer, mSongLayer, mSong2Layer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer, mInstEmptyLayer, mDeviceBrowserLayer;
+   public Layer mBaseLayer, mInstLayer, mSongLayer, mSong2Layer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer, mInstEmptyLayer, mDeviceBrowserLayer,mMultiBrowserLayer,mSamplesBrowserLayer,mPresetBrowserLayer;
    private Layer mLastLayer;
    //final int mLayersCount = mLayers.getLayers().size();
    final List<Layer> mLayerList = mLayers.getLayers();
