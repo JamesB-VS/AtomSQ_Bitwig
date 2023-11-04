@@ -7,12 +7,15 @@ package com.presonus.handler;
 import java.lang.reflect.Method;
 
 import com.bitwig.extension.controller.api.Application;
+import com.bitwig.extension.controller.api.Browser;
 import com.bitwig.extension.controller.api.CursorDevice;
 import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.CursorBrowserResultItem;
 import com.bitwig.extension.controller.api.CursorTrack;
 import com.bitwig.extension.controller.api.MidiOut;
 import com.bitwig.extension.api.util.midi.SysexBuilder;
+//V1.1
+import com.bitwig.extension.controller.api.PopupBrowser;
 
 import com.bitwig.extensions.framework.Layer;
 
@@ -33,7 +36,8 @@ public class DisplayMode
    //V1.1
    private Layer dInstEmptyLayer;
    private Layer dDeviceBrowserLayer;
-
+   private PopupBrowser dPopupBrowser;
+   private String dPopupBrowsertype;
 
    public void start(AtomSQExtension Ext)
    {
@@ -49,31 +53,36 @@ public class DisplayMode
       //V1.1
       dInstEmptyLayer = dASQCE.mInstEmptyLayer;
       dDeviceBrowserLayer = dASQCE.mDeviceBrowserLayer;
+      dPopupBrowser = dASQCE.mPopupBrowser;
 
     }
       
    public void updateDisplay ()
    {
       //V1.1 Preset Browser. This needs to be above the standard browser layer, as both ar active at the same time. 
-      if(dDeviceBrowserLayer.isActive()){
+    if(dDeviceBrowserLayer.isActive()){
          //Main line 1 
+         dPopupBrowsertype = dPopupBrowser.selectedContentTypeName().get();
          String pTrack = dCursorTrack.name().get();
          byte[] sysex2 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("Track: ", 7).addString(pTrack, pTrack.length()).terminate();
             dMidiOut.sendSysex(sysex2);
 
          //Main line 2
          String pDevice = dBrowserResult.name().get();
-         byte[] sysex3 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.magenta).addByte(sH.spc).addString("Device: ", 8).addString(pDevice, pDevice.length()).terminate();
+         byte[] sysex3 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.magenta).addByte(sH.spc).addString(dPopupBrowsertype, dPopupBrowsertype.length()).addString(": ", 2).addString(pDevice, pDevice.length()).terminate();
          dMidiOut.sendSysex(sysex3);
 
       }
       else if (dBrowserLayer.isActive()){
+         dPopupBrowsertype = dPopupBrowser.selectedContentTypeName().get();
+         //Main line 1 
          String pDev = dCursorDevice.name().get();
          byte[] sysex3 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("Device: ", 8).addString(pDev, pDev.length()).terminate();
          dMidiOut.sendSysex(sysex3);
+         //Main line 2      
 
-         String pTrack = dBrowserResult.name().get();
-         byte[] sysex2 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.magenta).addByte(sH.spc).addString("Preset: ", 8).addString(pTrack, pTrack.length()).terminate();
+         String pRes = dBrowserResult.name().get();
+         byte[] sysex2 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.magenta).addByte(sH.spc).addString(dPopupBrowsertype, dPopupBrowsertype.length()).addString(": ", 2).addString(pRes, pRes.length()).terminate();
          dMidiOut.sendSysex(sysex2);
       }
 

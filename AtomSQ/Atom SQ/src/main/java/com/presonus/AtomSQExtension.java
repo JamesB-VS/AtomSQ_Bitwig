@@ -232,15 +232,15 @@ public class AtomSQExtension extends ControllerExtension
          {
             DM.BrowserMode();
             activateLayer(mBrowserLayer, null);
-           // browserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
-           browserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
-           browserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
-           mHost.println("browsermode activated, type should be: "+browserlayercontentname);
-           mHost.println("browsermode activated, typeindex should be: "+browserlayercontentindex);
+           // mBrowserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
+           mBrowserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
+           mBrowserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
+           mHost.println("browsermode activated, type should be: "+mBrowserlayercontentname);
+           mHost.println("browsermode activated, typeindex should be: "+mBrowserlayercontentindex);
             
-           if (browserlayercontentindex == 0) {
+           if (mBrowserlayercontentindex == 0) {
             activateLayer(mDeviceBrowserLayer, mBrowserLayer);
-            mHost.println("type is: "+browserlayercontentname);
+            mHost.println("type is: "+mBrowserlayercontentname);
             }
             // else{
             //    mDeviceBrowserLayer.deactivate();
@@ -1063,10 +1063,10 @@ public class AtomSQExtension extends ControllerExtension
       } 
 
       //V1.1 Preset Browser: reporting names. This works just fine. 
-      browserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
-      mHost.println("FLUSH: browser contenttype is: "+browserlayercontentname);
-      browserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
-      mHost.println("FLUSH: typeindex should be: "+browserlayercontentindex);
+      mBrowserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
+      mHost.println("FLUSH: browser contenttype is: "+mBrowserlayercontentname);
+      mBrowserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
+      mHost.println("FLUSH: typeindex should be: "+mBrowserlayercontentindex);
 
 
       mHardwareSurface.updateHardware();
@@ -1212,7 +1212,7 @@ public RelativeHardwarControlBindable RHCBfiletype;
 public RelativeHardwarControlBindable RHCBresult; 
 public RelativeHardwarControlBindable RHCBnothing;
 
-public String browserlayercontentname;
-public Integer browserlayercontentindex;
+public String mBrowserlayercontentname;
+public Integer mBrowserlayercontentindex;
 
 }
