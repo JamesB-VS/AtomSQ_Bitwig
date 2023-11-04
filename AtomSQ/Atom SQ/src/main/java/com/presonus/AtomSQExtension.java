@@ -43,6 +43,7 @@ import com.bitwig.extension.controller.api.PopupBrowser;
 import com.bitwig.extension.controller.api.RelativeHardwarControlBindable;
 //Bitwig Framework components
 import com.bitwig.extensions.framework.Layer;
+import com.bitwig.extensions.framework.LayerGroup;
 import com.bitwig.extensions.framework.Layers;
 
 //Local components
@@ -113,6 +114,11 @@ public class AtomSQExtension extends ControllerExtension
       mPopupBrowser = mHost.createPopupBrowser();
       mPopupBrowser.exists().markInterested();
       mPopupBrowser.selectedContentTypeIndex().markInterested();
+      //V1.1 Preset Browser
+      //adding observer for content type names
+      mPopupBrowser.contentTypeNames().markInterested();
+      mPopupBrowser.selectedContentTypeIndex().markInterested();
+      mPopupBrowser.selectedContentTypeName().markInterested();     
 
       mBrowserResult = (CursorBrowserResultItem) mPopupBrowser.resultsColumn().createCursorItem();
       mBrowserCategory =(CursorBrowserFilterItem) mPopupBrowser.categoryColumn().createCursorItem();
@@ -134,6 +140,9 @@ public class AtomSQExtension extends ControllerExtension
       mBrowserDevType = (CursorBrowserFilterItem) mPopupBrowser.deviceColumn().createCursorItem();
       mBrowserDevType.exists().markInterested();
      
+
+
+
       mCDLDBnk = mCursorTrack.createDeviceBank(3);
       mCDLDBnk.canScrollBackwards().markInterested();
       mCDLDBnk.canScrollForwards().markInterested();
@@ -217,14 +226,33 @@ public class AtomSQExtension extends ControllerExtension
       initLayers(); 
     
       //as a value observer, this is evaluated AFTER the init is completed. this is where, f.e. the Baselayer was being re-activated during startup. 
+      
       mPopupBrowser.exists().addValueObserver(exists -> {
          if (exists)
          {
-            activateLayer(mBrowserLayer, null);
             DM.BrowserMode();
-         } 
+            activateLayer(mBrowserLayer, null);
+           // browserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
+           browserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
+           browserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
+           mHost.println("browsermode activated, type should be: "+browserlayercontentname);
+           mHost.println("browsermode activated, typeindex should be: "+browserlayercontentindex);
+            
+           if (browserlayercontentindex == 0) {
+            activateLayer(mDeviceBrowserLayer, mBrowserLayer);
+            mHost.println("type is: "+browserlayercontentname);
+            }
+            // else{
+            //    mDeviceBrowserLayer.deactivate();
+            //    mBrowserLayer.deactivate();
+            //    mHost.println("browsermodes deactivated");
+            // }
+
+       }
+      
          else{
             mBrowserLayer.deactivate();
+            mDeviceBrowserLayer.deactivate();
             activateLayer(mLastLayer, null);
             //TODO this is ugly and manual, but it should work. I cannot get a good logic to do this.
             if (mLastLayer == mInstLayer){DM.InstMode();}
@@ -564,6 +592,9 @@ public class AtomSQExtension extends ControllerExtension
       dec7 = mHost.createAction(() -> mBrowserResult.selectPrevious(),  () -> "-");
       RHCBresult = mHost.createRelativeHardwareControlStepTarget(inc7, dec7);
 
+      //adding a "nothing" option to clear some encoders
+
+      RHCBnothing = mHost.createRelativeHardwareControlStepTarget(null, null);
 
          }
 
@@ -586,6 +617,7 @@ public class AtomSQExtension extends ControllerExtension
       mShiftLayer = createLayer ("Shift");
       mBrowserLayer = createLayer("Browser");
       mInstEmptyLayer = createLayer("InstEmpty");
+      mDeviceBrowserLayer = createLayer("DeviceBrowser");
 
 
       createBaseLayer();
@@ -598,6 +630,10 @@ public class AtomSQExtension extends ControllerExtension
       createSong2Layer();
       createBrowserLayer();
       createInstEmptyLayer();
+      createDeviceBrowserLayer();
+
+
+
 
       // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
    }
@@ -946,28 +982,26 @@ public class AtomSQExtension extends ControllerExtension
 
       }  
    
- /*   private void createDeviceBrowserLayer()
+   private void createDeviceBrowserLayer()
       {
          //V1.1 Preset Browser: adding controls for all the menu options
          //Encoder 1
-         mBrowserLayer.bind(mEncoders[0], RHCBsmartfolders);
-        //Encoder 2
-         //mBrowserLayer.bind(mEncoders[1], RHC);
+         mDeviceBrowserLayer.bind(mEncoders[0], RHCBsmartfolders);
+         //Encoder 2
+         //mDeviceBrowserLayer.bind(mEncoders[1], RHC);
          //Encoder 3
-        // mBrowserLayer.bind(mEncoders[2], mHost.createRelativeHardwareControlStepTarget(inc2, dec2));
+         mDeviceBrowserLayer.bind(mEncoders[2], RHCBnothing);
          //Encoder 4
-         mBrowserLayer.bind(mEncoders[3], RHCBlocations);
+         mDeviceBrowserLayer.bind(mEncoders[3], RHCBlocations);
          //Encoder 5
-         mBrowserLayer.bind(mEncoders[4],RHCBfiletype);
+         mDeviceBrowserLayer.bind(mEncoders[4],RHCBfiletype);
          //Encoder 
-         mBrowserLayer.bind(mEncoders[5], RHCBcategory);
-         //Encoder 7
-         mBrowserLayer.bind(mEncoders[6], RHCBcreator);
-         //Encoder 8
-         mBrowserLayer.bind(mEncoders[7], RHCBresult);
-
-
-      } */
+         mDeviceBrowserLayer.bind(mEncoders[5], RHCBcategory);
+         // //Encoder 7
+         // mDeviceBrowserLayer.bind(mEncoders[6], RHCBcreator);
+         // //Encoder 8
+         // mDeviceBrowserLayer.bind(mEncoders[7], RHCBresult);
+      }
   
 
       //TODO what is this really doing? can this be cleaned up with the newer browser setup?
@@ -1027,6 +1061,13 @@ public class AtomSQExtension extends ControllerExtension
          activateLayer(mInstEmptyLayer,null);
          DM.InstEmptyMode();
       } 
+
+      //V1.1 Preset Browser: reporting names. This works just fine. 
+      browserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
+      mHost.println("FLUSH: browser contenttype is: "+browserlayercontentname);
+      browserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
+      mHost.println("FLUSH: typeindex should be: "+browserlayercontentindex);
+
 
       mHardwareSurface.updateHardware();
       DM.updateDisplay();
@@ -1131,11 +1172,17 @@ public class AtomSQExtension extends ControllerExtension
          super.activeLayersChanged();
       }
    }; 
-   public Layer mBaseLayer, mInstLayer, mSongLayer, mSong2Layer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer, mInstEmptyLayer;
+   public Layer mBaseLayer, mInstLayer, mSongLayer, mSong2Layer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer, mInstEmptyLayer, mDeviceBrowserLayer;
    private Layer mLastLayer;
    //final int mLayersCount = mLayers.getLayers().size();
    final List<Layer> mLayerList = mLayers.getLayers();
    final List<Layer> mActiveLayers = new ArrayList<>();
+
+   // //V1.1 adding layer group
+   // public LayerGroup mBrowserLayerGroup;
+   // void mBrowserLayerGroup(mDeviceBrowserLayer);
+   
+
 
 //V1.1 Preset Browser
 public HardwareActionBindable inc0;
@@ -1163,8 +1210,9 @@ public RelativeHardwarControlBindable RHCBdevices;
 public RelativeHardwarControlBindable RHCBlocations; 
 public RelativeHardwarControlBindable RHCBfiletype; 
 public RelativeHardwarControlBindable RHCBresult; 
+public RelativeHardwarControlBindable RHCBnothing;
 
-
-
+public String browserlayercontentname;
+public Integer browserlayercontentindex;
 
 }
