@@ -32,6 +32,7 @@ import com.bitwig.extension.controller.api.Parameter;
 import com.bitwig.extension.controller.api.RelativeHardwareKnob;
 import com.bitwig.extension.controller.api.Transport;
 import com.bitwig.extension.controller.api.SendBank;
+import com.bitwig.extension.controller.api.SettableRangedValue;
 import com.bitwig.extension.controller.api.Track;
 import com.bitwig.extension.controller.api.TrackBank;
 import com.bitwig.extension.controller.api.MasterTrack;
@@ -39,14 +40,15 @@ import com.bitwig.extension.controller.api.HardwareActionBindable;
 import com.bitwig.extension.controller.api.DeviceBank;
 import com.bitwig.extension.controller.api.Device;
 import com.bitwig.extension.controller.api.PopupBrowser;
-
+import com.bitwig.extension.controller.api.RelativeHardwarControlBindable;
 //Bitwig Framework components
 import com.bitwig.extensions.framework.Layer;
+import com.bitwig.extensions.framework.LayerGroup;
 import com.bitwig.extensions.framework.Layers;
 
 //Local components
 import com.presonus.handler.DisplayMode;
-import com.presonus.handler.HardwareHandler;;
+import com.presonus.handler.HardwareHandler;
 public class AtomSQExtension extends ControllerExtension
 {
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
@@ -112,6 +114,11 @@ public class AtomSQExtension extends ControllerExtension
       mPopupBrowser = mHost.createPopupBrowser();
       mPopupBrowser.exists().markInterested();
       mPopupBrowser.selectedContentTypeIndex().markInterested();
+      //V1.1 Preset Browser
+      //adding observer for content type names
+      mPopupBrowser.contentTypeNames().markInterested();
+      mPopupBrowser.selectedContentTypeIndex().markInterested();
+      mPopupBrowser.selectedContentTypeName().markInterested();     
 
       mBrowserResult = (CursorBrowserResultItem) mPopupBrowser.resultsColumn().createCursorItem();
       mBrowserCategory =(CursorBrowserFilterItem) mPopupBrowser.categoryColumn().createCursorItem();
@@ -122,6 +129,16 @@ public class AtomSQExtension extends ControllerExtension
       mBrowserCreator.exists().markInterested();
       mBrowserTag.exists().markInterested();
       mBrowserResult.name().markInterested();
+
+      //V1.1 Preset Browser
+      mBrowserLocation = (CursorBrowserFilterItem) mPopupBrowser.locationColumn().createCursorItem();
+      mBrowserLocation.exists().markInterested();
+      mBrowserFileType = (CursorBrowserFilterItem) mPopupBrowser.fileTypeColumn().createCursorItem();
+      mBrowserFileType.exists().markInterested();
+      mBrowserFavorites = (CursorBrowserFilterItem) mPopupBrowser.smartCollectionColumn().createCursorItem();
+      mBrowserFavorites.exists().markInterested();
+      mBrowserDevType = (CursorBrowserFilterItem) mPopupBrowser.deviceColumn().createCursorItem();
+      mBrowserDevType.exists().markInterested();
      
       mCDLDBnk = mCursorTrack.createDeviceBank(3);
       mCDLDBnk.canScrollBackwards().markInterested();
@@ -198,18 +215,42 @@ public class AtomSQExtension extends ControllerExtension
       //TODO this does not have any effect it seems. Still need to force the app to select the first track on start to get the ball rolling.
       mApplication.selectFirst();
       
+      //V1.1 attempt to extract the encoder functions
+      createBrowserTargets();
+
+
       //Layers
       initLayers(); 
     
       //as a value observer, this is evaluated AFTER the init is completed. this is where, f.e. the Baselayer was being re-activated during startup. 
+      
       mPopupBrowser.exists().addValueObserver(exists -> {
          if (exists)
          {
-            activateLayer(mBrowserLayer, null);
             DM.BrowserMode();
-         } 
+            activateLayer(mBrowserLayer, null);
+
+         //   mHost.println("browsermode activated, type should be: "+mBrowserlayercontentname);
+         //   mHost.println("browsermode activated, typeindex should be: "+mBrowserlayercontentindex);
+/*             
+           if (mBrowserlayercontentindex == 0) {
+            activateLayer(mDeviceBrowserLayer, mBrowserLayer);
+            mHost.println("type is: "+mBrowserlayercontentname);
+            }
+
+            else if (mBrowserlayercontentindex == 2) {activateLayer(mMultiBrowserLayer, mBrowserLayer);}
+            else if (mBrowserlayercontentindex == 3) {activateLayer(mSamplesBrowserLayer, mBrowserLayer);}
+            else if (mBrowserlayercontentindex == 4) {activateLayer(mSamplesBrowserLayer, mBrowserLayer);}
+ */
+
+         }
          else{
             mBrowserLayer.deactivate();
+            mPresetBrowserLayer.deactivate();
+            mMultiBrowserLayer.deactivate();
+            mSamplesBrowserLayer.deactivate();
+            mDeviceBrowserLayer.deactivate();
+           // mDeviceBrowserLayer.deactivate();
             activateLayer(mLastLayer, null);
             //TODO this is ugly and manual, but it should work. I cannot get a good logic to do this.
             if (mLastLayer == mInstLayer){DM.InstMode();}
@@ -223,6 +264,8 @@ public class AtomSQExtension extends ControllerExtension
          }
             
       });
+      
+
 
       //V1.1 assignment of default cursor device, so the empty screen does not appear on startup
       mCursorDevice.selectFirst();
@@ -248,6 +291,8 @@ public class AtomSQExtension extends ControllerExtension
      ////////////////////////
     //  Hardware Surface  //
    ////////////////////////
+
+
 
    private void inithardwareSurface(ControllerHost mHost)
    {
@@ -510,6 +555,48 @@ public class AtomSQExtension extends ControllerExtension
 
    }
  
+//V1.1 preset
+//this is an abstraction of the old browser layer. This should allow for easier layer creation, as each of the diff configs has diff columns. 
+   public void createBrowserTargets() {
+      inc0 = mHost.createAction(() ->  mBrowserFavorites.selectNext(),  () -> "+");
+      dec0 = mHost.createAction(() -> mBrowserFavorites.selectPrevious(),  () -> "-");
+      RHCBsmartfolders = mHost.createRelativeHardwareControlStepTarget(inc0, dec0);
+
+      inc1 = mHost.createAction(() ->  mBrowserDevType.selectNext(),  () -> "+");
+      dec1 = mHost.createAction(() -> mBrowserDevType.selectPrevious(),  () -> "-");
+      RHCBdevices = mHost.createRelativeHardwareControlStepTarget(inc1, dec1);
+
+      inc2 = mHost.createAction(() ->  mBrowserLocation.selectNext(),  () -> "+");
+      dec2 = mHost.createAction(() -> mBrowserLocation.selectPrevious(),  () -> "-");
+      RHCBlocations = mHost.createRelativeHardwareControlStepTarget(inc2, dec2);
+
+      inc3 = mHost.createAction(() ->  mBrowserFileType.selectNext(),  () -> "+");
+      dec3 = mHost.createAction(() -> mBrowserFileType.selectPrevious(),  () -> "-");
+      RHCBfiletype = mHost.createRelativeHardwareControlStepTarget(inc3, dec3);
+
+      inc4 = mHost.createAction(() ->  mBrowserCategory.selectNext(),  () -> "+");
+      dec4 = mHost.createAction(() -> mBrowserCategory.selectPrevious(),  () -> "-");
+      RHCBcategory = mHost.createRelativeHardwareControlStepTarget(inc4, dec4);
+
+      inc5 = mHost.createAction(() ->  mBrowserTag.selectNext(),  () -> "+");
+      dec5 = mHost.createAction(() -> mBrowserTag.selectPrevious(),  () -> "-");
+      RHCBtags = mHost.createRelativeHardwareControlStepTarget(inc5, dec5);
+
+      inc6 = mHost.createAction(() ->  mBrowserCreator.selectNext(),  () -> "+");
+      dec6 = mHost.createAction(() -> mBrowserCreator.selectPrevious(),  () -> "-");
+      RHCBcreator = mHost.createRelativeHardwareControlStepTarget(inc6, dec6);
+
+      inc7 = mHost.createAction(() ->  mBrowserResult.selectNext(),  () -> "+");
+      dec7 = mHost.createAction(() -> mBrowserResult.selectPrevious(),  () -> "-");
+      RHCBresult = mHost.createRelativeHardwareControlStepTarget(inc7, dec7);
+
+      //adding a "nothing" option to clear some encoders
+
+      RHCBnothing = mHost.createRelativeHardwareControlStepTarget(null, null);
+
+         }
+
+
      ////////////////////////
     //       Layers       //
    ////////////////////////
@@ -528,7 +615,10 @@ public class AtomSQExtension extends ControllerExtension
       mShiftLayer = createLayer ("Shift");
       mBrowserLayer = createLayer("Browser");
       mInstEmptyLayer = createLayer("InstEmpty");
-
+      mDeviceBrowserLayer = createLayer("DeviceBrowser");
+      mMultiBrowserLayer = createLayer("MultiBrowser");
+      mSamplesBrowserLayer = createLayer("SamplesBrowser");
+      mPresetBrowserLayer = createLayer("PresetBrowser");
 
       createBaseLayer();
       createInstLayer();
@@ -540,6 +630,13 @@ public class AtomSQExtension extends ControllerExtension
       createSong2Layer();
       createBrowserLayer();
       createInstEmptyLayer();
+      createDeviceBrowserLayer();
+      createMultiBrowserLayer();
+      createSamplesBrowserLayer();
+      createPresetBrowserLayer();
+
+
+
 
       // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
    }
@@ -561,10 +658,24 @@ public class AtomSQExtension extends ControllerExtension
          String stsname = sts.getName().toString();
          //mHost.println("layer to evaluate: "+stsname);
          //moved the last layer functionality out of flush so it can indicate the previous layer in activateLayer()
-         if (stsname == "Browser"){continue;} 
-         else if (stsname == "Shift") {continue;} 
-         else if (stsname == "Base") {continue;} 
-         else {mLastLayer = sts;}
+         // if (stsname == "Browser"){continue;} 
+         // else if (stsname == "Shift") {continue;} 
+         // else if (stsname == "Base") {continue;} 
+         // else {mLastLayer = sts;}
+         //V1.1 Preset Browser. changing to a switch, is easier to read and write.
+         //it would be sweet to do this with the layers instead of thenames, but switch cannot do that.
+         switch (stsname){
+            case "Shift": continue;
+            case "Browser": continue;
+            case "Base": continue;
+            case "DeviceBrowser": continue;
+            case "PresetBrowser": continue;
+            case "MultiBrowser": continue;
+            case "SamplesBrowser": continue;
+            default: mLastLayer = sts;
+         }
+
+
       }
        
        mHost.println("previous layer is: "+mLastLayer.getName().toString());
@@ -572,7 +683,7 @@ public class AtomSQExtension extends ControllerExtension
       for(Layer alayer: mLayerList)
       { 
          String alayername = alayer.getName().toString();
-         mHost.println("iteration layer is: "+alayername);
+         //mHost.println("iteration layer is: "+alayername);
          if (alayer == mBaseLayer){continue;}
          else if (alayer == mShiftLayer){continue;}
          else if (alayer == mLeaveIt){continue;}
@@ -863,28 +974,95 @@ public class AtomSQExtension extends ControllerExtension
   
    private void createBrowserLayer()
       {
-         final HardwareActionBindable inc4 = mHost.createAction(() ->  mBrowserCategory.selectNext(),  () -> "+");
-         final HardwareActionBindable dec4 = mHost.createAction(() -> mBrowserCategory.selectPrevious(),  () -> "-");
-         mBrowserLayer.bind(mEncoders[4], mHost.createRelativeHardwareControlStepTarget(inc4, dec4));
-
-         final HardwareActionBindable inc5 = mHost.createAction(() ->  mBrowserTag.selectNext(),  () -> "+");
-         final HardwareActionBindable dec5 = mHost.createAction(() -> mBrowserTag.selectPrevious(),  () -> "-");
-         mBrowserLayer.bind(mEncoders[5], mHost.createRelativeHardwareControlStepTarget(inc5, dec5));
-
-         final HardwareActionBindable inc6 = mHost.createAction(() ->  mBrowserCreator.selectNext(),  () -> "+");
-         final HardwareActionBindable dec6 = mHost.createAction(() -> mBrowserCreator.selectPrevious(),  () -> "-");
-         mBrowserLayer.bind(mEncoders[6], mHost.createRelativeHardwareControlStepTarget(inc6, dec6));
-
-         final HardwareActionBindable inc7 = mHost.createAction(() ->  mBrowserResult.selectNext(),  () -> "+");
-         final HardwareActionBindable dec7 = mHost.createAction(() -> mBrowserResult.selectPrevious(),  () -> "-");
-         mBrowserLayer.bind(mEncoders[7], mHost.createRelativeHardwareControlStepTarget(inc7, dec7));
-
          mBrowserLayer.bindToggle(m4Button, mPopupBrowser.shouldAudition(), mPopupBrowser.shouldAudition());
          mBrowserLayer.bindPressed(m5Button, mPopupBrowser.cancelAction());
          mBrowserLayer.bindPressed(m6Button, mPopupBrowser.commitAction());
+      }
+
+   private void createPresetBrowserLayer()
+   {
+         //leaving a "default" layer here for the presets page, then we only have to overwrite the changes in other smaller layers
+         //V1.1 Preset Browser: adding controls for all the menu options
+         //Encoder 1
+         mBrowserLayer.bind(mEncoders[0], RHCBsmartfolders);
+         //Encoder 2
+         //mBrowserLayer.bind(mEncoders[1], RHC);
+         //Encoder 3
+         mBrowserLayer.bind(mEncoders[2], RHCBlocations);
+         //Encoder 4
+         mBrowserLayer.bind(mEncoders[3], RHCBdevices);
+         //Encoder 5
+         mBrowserLayer.bind(mEncoders[4],RHCBcategory);
+         //Encoder 
+         mBrowserLayer.bind(mEncoders[5], RHCBtags);
+         //Encoder 7
+         mBrowserLayer.bind(mEncoders[6], RHCBcreator);
+         //Encoder 8
+         mBrowserLayer.bind(mEncoders[7], RHCBresult);
 
       }  
+   
+   private void createDeviceBrowserLayer()
+      {
+         //V1.1 Preset Browser: adding controls for all the menu options
+         //Encoder 1
+         mDeviceBrowserLayer.bind(mEncoders[0], RHCBsmartfolders);
+         //Encoder 3
+         mDeviceBrowserLayer.bind(mEncoders[2], RHCBnothing);
+         //Encoder 4
+         mDeviceBrowserLayer.bind(mEncoders[3], RHCBlocations);
+         //Encoder 5
+         mDeviceBrowserLayer.bind(mEncoders[4],RHCBfiletype);
+         //Encoder 6
+         mDeviceBrowserLayer.bind(mEncoders[5], RHCBcategory);
 
+      }
+  
+   private void createMultiBrowserLayer()
+      {
+         //V1.1 Preset Browser: adding controls for all the menu options
+         //Encoder 1
+         mMultiBrowserLayer.bind(mEncoders[0], RHCBsmartfolders);
+         //Encoder 2
+         //mDeviceBrowserLayer.bind(mEncoders[1], RHC);
+         //Encoder 3
+         mMultiBrowserLayer.bind(mEncoders[2], RHCBlocations);
+         //Encoder 4
+         mMultiBrowserLayer.bind(mEncoders[3], RHCBfiletype);
+         //Encoder 5
+         mMultiBrowserLayer.bind(mEncoders[4],RHCBcategory);
+         //Encoder 
+         mMultiBrowserLayer.bind(mEncoders[5], RHCBtags);
+         //Encoder 7
+         mMultiBrowserLayer.bind(mEncoders[6], RHCBcreator);
+         //Encoder 8
+         mMultiBrowserLayer.bind(mEncoders[7], RHCBresult);
+      }
+
+   private void createSamplesBrowserLayer()
+      {
+         //V1.1 Preset Browser: adding controls for all the menu options
+         //Encoder 1
+         mSamplesBrowserLayer.bind(mEncoders[0], RHCBsmartfolders);
+         //Encoder 2
+         //mDeviceBrowserLayer.bind(mEncoders[1], RHC);
+         //Encoder 3
+         mSamplesBrowserLayer.bind(mEncoders[2], RHCBnothing);
+         //Encoder 4
+         mSamplesBrowserLayer.bind(mEncoders[3], RHCBnothing);
+         //Encoder 5
+         mSamplesBrowserLayer.bind(mEncoders[4],RHCBnothing);
+         //Encoder 
+         mSamplesBrowserLayer.bind(mEncoders[5], RHCBfiletype);
+         //Encoder 7
+         mSamplesBrowserLayer.bind(mEncoders[6], RHCBlocations);
+         //Encoder 8
+         mSamplesBrowserLayer.bind(mEncoders[7], RHCBresult);
+      }
+
+
+
+      //TODO what is this really doing? can this be cleaned up with the newer browser setup?
    private void startPresetBrowsing()
 {
    if (mCursorDevice.exists().get())
@@ -941,6 +1119,28 @@ public class AtomSQExtension extends ControllerExtension
          activateLayer(mInstEmptyLayer,null);
          DM.InstEmptyMode();
       } 
+
+      //V1.1 Preset Browser: reporting names. This works just fine. 
+      mBrowserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
+      mHost.println("FLUSH: browser contenttype is: "+mBrowserlayercontentname);
+      mBrowserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
+      mHost.println("FLUSH: typeindex should be: "+mBrowserlayercontentindex);
+
+      //V1.1 Preset Browser: added this to activate layers in particular when switching when the browser is already open. 
+   if(mBrowserLayer.isActive()){
+         //        mBrowserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
+         //  mBrowserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
+         mBrowserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
+      switch(mBrowserlayercontentindex){
+         case 0: activateLayer(mDeviceBrowserLayer, mBrowserLayer); break;
+         case 1: activateLayer(mPresetBrowserLayer, mBrowserLayer);break;
+         case 2: activateLayer(mMultiBrowserLayer, mBrowserLayer);break;
+         case 3: activateLayer(mSamplesBrowserLayer, mBrowserLayer);break;
+         case 4: activateLayer(mSamplesBrowserLayer, mBrowserLayer);break;
+      }
+      
+
+   }
 
       mHardwareSurface.updateHardware();
       DM.updateDisplay();
@@ -1005,11 +1205,20 @@ public class AtomSQExtension extends ControllerExtension
    public CursorTrack mCursorTrack;
    private  DeviceBank mCDLDBnk;
    private TrackBank mTrackBank;
+
    public PopupBrowser mPopupBrowser;
    public CursorBrowserResultItem mBrowserResult;
    private CursorBrowserFilterItem mBrowserCategory;
    private CursorBrowserFilterItem mBrowserCreator;
    private CursorBrowserFilterItem mBrowserTag;
+   //V1.1 New
+   private CursorBrowserFilterItem mBrowserFavorites;
+   private CursorBrowserFilterItem mBrowserDevType;
+   private CursorBrowserFilterItem mBrowserLocation;
+   private CursorBrowserFilterItem mBrowserFileType;
+   
+
+
    private DisplayMode DM;
    public ControllerHost mHost;
    private static HardwareHandler hH = new HardwareHandler();
@@ -1036,10 +1245,47 @@ public class AtomSQExtension extends ControllerExtension
          super.activeLayersChanged();
       }
    }; 
-   public Layer mBaseLayer, mInstLayer, mSongLayer, mSong2Layer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer, mInstEmptyLayer;
+   public Layer mBaseLayer, mInstLayer, mSongLayer, mSong2Layer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer, mInstEmptyLayer, mDeviceBrowserLayer,mMultiBrowserLayer,mSamplesBrowserLayer,mPresetBrowserLayer;
    private Layer mLastLayer;
    //final int mLayersCount = mLayers.getLayers().size();
    final List<Layer> mLayerList = mLayers.getLayers();
    final List<Layer> mActiveLayers = new ArrayList<>();
+
+   // //V1.1 adding layer group
+   // public LayerGroup mBrowserLayerGroup;
+   // void mBrowserLayerGroup(mDeviceBrowserLayer);
+   
+
+
+//V1.1 Preset Browser
+public HardwareActionBindable inc0;
+public HardwareActionBindable dec0;
+public HardwareActionBindable inc1;
+public HardwareActionBindable dec1;
+public HardwareActionBindable inc2;
+public HardwareActionBindable dec2;
+public HardwareActionBindable inc3;
+public HardwareActionBindable dec3;
+public HardwareActionBindable inc4;
+public HardwareActionBindable dec4;
+public HardwareActionBindable inc5;
+public HardwareActionBindable dec5;
+public HardwareActionBindable inc6;
+public HardwareActionBindable dec6;
+public HardwareActionBindable inc7;
+public HardwareActionBindable dec7;
+
+public RelativeHardwarControlBindable RHCBsmartfolders; 
+public RelativeHardwarControlBindable RHCBtags; 
+public RelativeHardwarControlBindable RHCBcreator; 
+public RelativeHardwarControlBindable RHCBcategory; 
+public RelativeHardwarControlBindable RHCBdevices; 
+public RelativeHardwarControlBindable RHCBlocations; 
+public RelativeHardwarControlBindable RHCBfiletype; 
+public RelativeHardwarControlBindable RHCBresult; 
+public RelativeHardwarControlBindable RHCBnothing;
+
+public String mBrowserlayercontentname;
+public Integer mBrowserlayercontentindex;
 
 }

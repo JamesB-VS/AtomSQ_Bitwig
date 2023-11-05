@@ -109,6 +109,8 @@ When the Inst button is lit, this mode is active. It provides access to controls
 
 In this mode, the center of the display shows the Track: in yellow and the Device: in white. The button text is also in white.
 
+V1.1: If a track has no device in it, the display menu will change to a helpful reminder to insert a device, and all 6 display buttons will bring up the pop-up browser to the Device menu.
+
 ##### Page 1
 |Control  |Function  |Shift  |
 |-  |-  |-  |
@@ -134,22 +136,33 @@ In this mode, the center of the display shows the Track: in yellow and the Devic
 
 #### Browser
 
-Browser mode is activated either by the new device or preset buttons in page 2 of the device mode, or when the browser is activated in Bitwig itself. 
+Browser mode is activated either by the new device button, preset buttons in page 2 of the device mode, or when the browser is activated in Bitwig itself. 
 
-In this mode, the center of the display shows the Device: in white and the Preset/New Device in magenta. The button text is also in magenta.
+This mode has been updated in version 1.1:
+Now each of the "types" of inserts (Devices, Presets, Multisamples, Samples, Music) will display this type in the 2nd line followed by the selection from the results column (the right-most column of the browser).
+
+When inserting a device, the top line of display text will show the trackname, otherwise the device name will be shown in white and the "type" in magenta. The button text is also in magenta.
+
+The mappings of the encoders are as follows. Yeah, it looks sort of complicated. The idea is that Smart Folders are always on Encoder 1, and the rest flows from the right, as displayed (if you have a customized view, hidden columns will pop into existance when you the relevant encoder, then go away again). 
 
 ##### Page 1
-|Control  |Function  |Shift  |
-|-  |-  |-  |
-|Encoders 1-4  |-  |-  |
-|Encoder 5  |Navigates the category column, if present  |-  |
-|Encoder 6  |Navigates the tag column, if present  |-  |
-|Encoder 7  |Navigates the creator column, if present  |-  |
-|Encoder 8  |Navigates the preset/device column |-  |
-|Buttons 1-3  |-  |-  |
-|Button 4   |Toggles preset preview  |-  |
-|Button 5   |Cancels selection and closes the browser  |-  |
-|Button 6   |OKs the selection and closes the browser  |-  |
+|Encoders  |Devices |Presets |Multisamples|Samples/Music|
+|-  |-  |-  |- |- |
+|Encoder 1 |Smart Folders |Smart Folders |Smart Folders |Smart Folders |
+|Encoder 2 |-  |-  |- |- |
+|Encoder 3 |-  |Locations |Locations |- |
+|Encoder 4 |Locations  |Devices  |File Type |- |
+|Encoder 5 |File Type  |Category|Category |- |
+|Encoder 6 |Category  |Tags  |Tags |File Type |
+|Encoder 7 |Creator |Creator  |Creator |Locations |
+|Encoder 8 |Results |Results |Results |Results |
+
+|Buttons|Browser Modes |
+|- |-|
+|Buttons 1-3  |-|
+|Button 4   |Toggles preset preview  |
+|Button 5   |Cancels selection and closes the browser  |
+|Button 6   |OKs the selection and closes the browser  |
 ## Technical Info
 This extension is written in Java to leverage the Hardware abstraction in the API, which I will not describe here because Moss does an excellent job in his Youtube channel, and you should check that out if you want to know more: https://www.youtube.com/watch?v=kTf_SSIyBEg
 
@@ -158,7 +171,7 @@ Additionally, I have imported the Framework folder from the Bitwig repository (h
 
 ## Not Included
 
-The stuff I am aware of that I could, and probably will, improve or add
+The stuff I am aware of that I could, and probably will, improve or add:
 
 1. Automatic recognition of the controller
 2. Track Color on the device, esp for the keys
