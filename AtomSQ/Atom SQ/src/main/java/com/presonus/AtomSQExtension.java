@@ -5,10 +5,12 @@ package com.presonus;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.DoubleToIntFunction;
 
 import com.bitwig.extension.api.Color;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import com.bitwig.extension.controller.ControllerExtension;
+import com.bitwig.extension.controller.api.AbsoluteHardwarControlBindable;
 import com.bitwig.extension.controller.api.Action;
 import com.bitwig.extension.controller.api.Application;
 import com.bitwig.extension.controller.api.BooleanValue;
@@ -20,6 +22,7 @@ import com.bitwig.extension.controller.api.CursorDeviceFollowMode;
 import com.bitwig.extension.controller.api.CursorRemoteControlsPage;
 import com.bitwig.extension.controller.api.CursorTrack;
 import com.bitwig.extension.controller.api.HardwareButton;
+import com.bitwig.extension.controller.api.HardwareControl;
 import com.bitwig.extension.controller.api.HardwareControlType;
 import com.bitwig.extension.controller.api.HardwareLightVisualState;
 import com.bitwig.extension.controller.api.HardwareSurface;
@@ -32,6 +35,8 @@ import com.bitwig.extension.controller.api.Parameter;
 import com.bitwig.extension.controller.api.RelativeHardwareKnob;
 import com.bitwig.extension.controller.api.Transport;
 import com.bitwig.extension.controller.api.SendBank;
+import com.bitwig.extension.controller.api.SettableBooleanValue;
+import com.bitwig.extension.controller.api.SettableIntegerValue;
 import com.bitwig.extension.controller.api.SettableRangedValue;
 import com.bitwig.extension.controller.api.Track;
 import com.bitwig.extension.controller.api.TrackBank;
@@ -49,6 +54,8 @@ import com.bitwig.extensions.framework.Layers;
 //Local components
 import com.presonus.handler.DisplayMode;
 import com.presonus.handler.HardwareHandler;
+import com.presonus.handler.DoNothing;
+
 public class AtomSQExtension extends ControllerExtension
 {
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
@@ -59,10 +66,19 @@ public class AtomSQExtension extends ControllerExtension
    @Override
    public void init()
    {
+ 
+      // HABval = 1;
+      // HABnothing.equals(HABval);
+      // HABnothing.markInterested();
+
 
       mHost = getHost();
       DM = new DisplayMode();
      
+      // //v1.1
+      mDoNothing = new DoNothing();
+
+
       mApplication = mHost.createApplication();
       mApplication.panelLayout().markInterested();
       mApplication.canRedo().markInterested();
@@ -594,6 +610,7 @@ public class AtomSQExtension extends ControllerExtension
 
       RHCBnothing = mHost.createRelativeHardwareControlStepTarget(null, null);
 
+
          }
 
 
@@ -971,34 +988,44 @@ public class AtomSQExtension extends ControllerExtension
       mUserLayer.bind(() -> true, mUserButton);
 
    }
-  
+
    private void createBrowserLayer()
       {
          mBrowserLayer.bindToggle(m4Button, mPopupBrowser.shouldAudition(), mPopupBrowser.shouldAudition());
          mBrowserLayer.bindPressed(m5Button, mPopupBrowser.cancelAction());
          mBrowserLayer.bindPressed(m6Button, mPopupBrowser.commitAction());
+         //V1.1 adding browser mode toggles to arrow keys
+        // mBrowserLayer.bindToggle(mLeftButton, mPopupBrowser.selectedContentTypeIndex().);
+         mBrowserLayer.bindPressed(mLeftButton, () -> {mPopupBrowser.selectedContentTypeIndex().inc(-1);} );
+         mBrowserLayer.bindPressed(mRightButton, () -> {mPopupBrowser.selectedContentTypeIndex().inc(1);} );
+        mBrowserLayer.bindPressed(mUpButton, () -> { mDoNothing.run();});
+       mBrowserLayer.bindPressed(mDownButton, () -> { mDoNothing.run();});
+
       }
+
+      //Note to self: these further assignments could be left as adjustments to the mBrowser layer..it seems to work. Not sure if this is an advantage anywhere vs new layers. 
+      //perhaps it would allow fewer layers, but the same number of changes for controls?
 
    private void createPresetBrowserLayer()
    {
          //leaving a "default" layer here for the presets page, then we only have to overwrite the changes in other smaller layers
          //V1.1 Preset Browser: adding controls for all the menu options
          //Encoder 1
-         mBrowserLayer.bind(mEncoders[0], RHCBsmartfolders);
+         mPresetBrowserLayer.bind(mEncoders[0], RHCBsmartfolders);
          //Encoder 2
          //mBrowserLayer.bind(mEncoders[1], RHC);
          //Encoder 3
-         mBrowserLayer.bind(mEncoders[2], RHCBlocations);
+         mPresetBrowserLayer.bind(mEncoders[2], RHCBlocations);
          //Encoder 4
-         mBrowserLayer.bind(mEncoders[3], RHCBdevices);
+         mPresetBrowserLayer.bind(mEncoders[3], RHCBdevices);
          //Encoder 5
-         mBrowserLayer.bind(mEncoders[4],RHCBcategory);
+         mPresetBrowserLayer.bind(mEncoders[4],RHCBcategory);
          //Encoder 
-         mBrowserLayer.bind(mEncoders[5], RHCBtags);
+         mPresetBrowserLayer.bind(mEncoders[5], RHCBtags);
          //Encoder 7
-         mBrowserLayer.bind(mEncoders[6], RHCBcreator);
+         mPresetBrowserLayer.bind(mEncoders[6], RHCBcreator);
          //Encoder 8
-         mBrowserLayer.bind(mEncoders[7], RHCBresult);
+         mPresetBrowserLayer.bind(mEncoders[7], RHCBresult);
 
       }  
    
@@ -1099,6 +1126,11 @@ public class AtomSQExtension extends ControllerExtension
       mHost.println("FLUSH INFO:");
 
       //Flush actions
+
+
+
+
+   
 
       //V1.1 troubleshooting for display mode issues
       String mcdname = mCursorDevice.name().get();
@@ -1287,5 +1319,11 @@ public RelativeHardwarControlBindable RHCBnothing;
 
 public String mBrowserlayercontentname;
 public Integer mBrowserlayercontentindex;
+
+//private  HardwareActionBindable HABnothing;
+// public SettableIntegerValue HABnothing;
+// public int HABval;
+
+private DoNothing mDoNothing;
 
 }
