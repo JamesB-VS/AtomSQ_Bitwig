@@ -5,6 +5,7 @@ package com.presonus;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleToIntFunction;
 
 import com.bitwig.extension.api.Color;
@@ -996,11 +997,14 @@ public class AtomSQExtension extends ControllerExtension
          mBrowserLayer.bindPressed(m6Button, mPopupBrowser.commitAction());
          //V1.1 adding browser mode toggles to arrow keys
         // mBrowserLayer.bindToggle(mLeftButton, mPopupBrowser.selectedContentTypeIndex().);
-         mBrowserLayer.bindPressed(mLeftButton, () -> {mPopupBrowser.selectedContentTypeIndex().inc(-1);} );
-         mBrowserLayer.bindPressed(mRightButton, () -> {mPopupBrowser.selectedContentTypeIndex().inc(1);} );
-        mBrowserLayer.bindPressed(mUpButton, () -> { mDoNothing.run();});
-       mBrowserLayer.bindPressed(mDownButton, () -> { mDoNothing.run();});
-
+         // mBrowserLayer.bindPressed(mLeftButton, () -> {mPopupBrowser.selectedContentTypeIndex().inc(-1);} );
+         // mBrowserLayer.bindPressed(mRightButton, () -> {mPopupBrowser.selectedContentTypeIndex().inc(1);} );
+         mBrowserLayer.bindToggle(mLeftButton, () -> {mPopupBrowser.selectedContentTypeIndex().inc(-1);},() -> (mPopupBrowser.selectedContentTypeIndex().getAsInt() != 0) );
+         mBrowserLayer.bindToggle(mRightButton, () -> {mPopupBrowser.selectedContentTypeIndex().inc(1);}, () -> (mPopupBrowser.selectedContentTypeIndex().getAsInt() != 4) );
+        // mBrowserLayer.bindPressed(mUpButton, () -> { mDoNothing.run();});
+      // mBrowserLayer.bindPressed(mDownButton, () -> { mDoNothing.run();});
+         mBrowserLayer.bindToggle(mUpButton,() -> { mDoNothing.run();}, mLightsOff);
+       mBrowserLayer.bindToggle(mDownButton,() -> { mDoNothing.run();}, mLightsOff);
       }
 
       //Note to self: these further assignments could be left as adjustments to the mBrowser layer..it seems to work. Not sure if this is an advantage anywhere vs new layers. 
@@ -1321,9 +1325,10 @@ public String mBrowserlayercontentname;
 public Integer mBrowserlayercontentindex;
 
 //private  HardwareActionBindable HABnothing;
-// public SettableIntegerValue HABnothing;
+ public SettableBooleanValue HABnothing;
 // public int HABval;
 
 private DoNothing mDoNothing;
+private BooleanSupplier mLightsOff;
 
 }
