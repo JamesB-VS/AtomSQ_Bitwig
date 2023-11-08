@@ -1054,6 +1054,10 @@ public class AtomSQExtension extends ControllerExtension
          mDeviceBrowserLayer.bind(mEncoders[4],RHCBfiletype);
          //Encoder 6
          mDeviceBrowserLayer.bind(mEncoders[5], RHCBcategory);
+                  //Encoder 7
+         mDeviceBrowserLayer.bind(mEncoders[6], RHCBcreator);
+         //Encoder 8
+         mDeviceBrowserLayer.bind(mEncoders[7], RHCBresult);
 
       }
   
