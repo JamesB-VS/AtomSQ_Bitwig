@@ -941,7 +941,14 @@ public class AtomSQExtension extends ControllerExtension
       mInst2Layer.bind(() -> true, mBackButton);
       mInst2Layer.bind(() -> false, mForwardButton);
       mInst2Layer.bind(() -> true, mInstButton);
-      
+
+      mInst2Layer.bind(() -> false, m1Button);
+      mInst2Layer.bind(() -> true, m2Button);
+      mInst2Layer.bind(() -> true, m3Button);
+      mInst2Layer.bind(() -> true, m4Button);
+      mInst2Layer.bind(() -> true, m5Button);
+      mInst2Layer.bind(() -> true, m6Button);
+
       //mInst2Layer.bindToggle(m5Button, mCursorDevice.isMacroSectionVisible()); //macro is wrong, want modulation, cannot find rn.
       mInst2Layer.bindPressed(m2Button, () -> {mApplication.focusPanelBelow(); mApplication.duplicate();});
       mInst2Layer.bindPressed(m3Button, () -> {mApplication.focusPanelBelow(); mCursorDevice.deleteObject();});
@@ -1003,7 +1010,8 @@ public class AtomSQExtension extends ControllerExtension
          mBrowserLayer.bindToggle(mRightButton, () -> {mPopupBrowser.selectedContentTypeIndex().inc(1);}, () -> (mPopupBrowser.selectedContentTypeIndex().getAsInt() != 4) );
         // mBrowserLayer.bindPressed(mUpButton, () -> { mDoNothing.run();});
       // mBrowserLayer.bindPressed(mDownButton, () -> { mDoNothing.run();});
-         mBrowserLayer.bindToggle(mUpButton,() -> { mDoNothing.run();}, mLightsOff);
+      //TODO two ways to do this...one in-line and the other with a boolean supplier....should pick one.
+         mBrowserLayer.bindToggle(mUpButton,() -> { mDoNothing.run();},  () -> false);
        mBrowserLayer.bindToggle(mDownButton,() -> { mDoNothing.run();}, mLightsOff);
       }
 
