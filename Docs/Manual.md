@@ -1,10 +1,8 @@
 # Presonus Atom SQ Bitwig Extension Manual
 
-
 ## Requirements
 - This extension is based on the API version 17, available in Bitwig 4.4 
 - It has only been tested on a Windows 11 sytem. Feedback from anyone using it on a Mac or Linux would be most welcome.
-
 
 ## Installation (Windows)
 
@@ -14,10 +12,7 @@
 - Assign the **ATM SQ** and **MID IN/OUT 2 (ATM SQ)** inputs and outputs to controller. 
 - Thats it. The **Inst** button on the controller should now be lit, and if you have a project already loaded, the Track and Device names should appear on the controller display.
 
-
-
 ## Quick Start
-
 - The B-H buttons, pitch bend, mod, and notes work as expected. 
 - There are two "modes" currently configured. These are triggered by the **Song** (for Tracks) and **Inst** (for Devices) buttons. 
 - The **User button** accesses the controller-native keyboard controls.  
@@ -25,13 +20,13 @@
 - Undo/Redo are bound to Shift-Back and Shift-Forward. 
 - Based on the mode (including in the preset/device pop-up browser) the encoders do different things. Not always all 8. 
 
-
 ## The Slow start, I guess?
 
 ### The Keys
 As stated above: the The B-H buttons, pitch bend, mod, and notes work as expected. Octaves can be changed by the B-H buttons, the keyboard scale, root note et al can be manipulated in the Keyboard menu as in Midi Mode.
 
 Currently, the A button does nothing. Working on it. 
+
 ### Transport
 The usual stuff, but with some shift functions too:
 |Key |Function  |Shift  |  
@@ -51,6 +46,7 @@ The  main click encoder (#9) and arrow buttons (Back/Fwd) to the right of the di
 |Forward  |Page forward in a mode. lights up if this is possible.  |Redo  |
 |Up /Down  |Moves between tracks. lights up if this is possible.  |-  |
 |Left/Right  |Moves between devices. lights up if this is possible.  |-  |
+
 ### Modes
 The concept here was to leverate the four buttons on the left of the display to make 4 Modes for use. I went back and forth a good while trying different things and settled on the following Modes:
 
@@ -104,10 +100,11 @@ In this mode, the center of the display shows the Track: in yellow and the Devic
 
 
 #### Devices Mode
-
 When the Inst button is lit, this mode is active. It provides access to controls for the Devices. There are two pages of controls, indicated by the Fwd/Back buttons being lit.
 
 In this mode, the center of the display shows the Track: in yellow and the Device: in white. The button text is also in white.
+
+V1.1: If a track has no device in it, the display menu will change to a helpful reminder to insert a device, and all 6 display buttons will bring up the pop-up browser to the Device menu.
 
 ##### Page 1
 |Control  |Function  |Shift  |
@@ -133,32 +130,42 @@ In this mode, the center of the display shows the Track: in yellow and the Devic
 
 
 #### Browser
+Browser mode is activated either by the new device button, preset buttons in page 2 of the device mode, or when the browser is activated in Bitwig itself. 
 
-Browser mode is activated either by the new device or preset buttons in page 2 of the device mode, or when the browser is activated in Bitwig itself. 
+This mode has been updated in version 1.1:
+Now each of the "types" of inserts (Devices, Presets, Multisamples, Samples, Music) will display this type in the 2nd line followed by the selection from the results column (the right-most column of the browser). Navigation between the content types is handled by the left and right arrow buttons.
 
-In this mode, the center of the display shows the Device: in white and the Preset/New Device in magenta. The button text is also in magenta.
+When inserting a device, the top line of display text will show the trackname, otherwise the device name will be shown in white and the "type" in magenta. The button text is also in magenta.
+
+The mappings of the encoders are as follows. Yeah, it looks sort of complicated. The idea is that Smart Folders are always on Encoder 1, and the rest flows from the right, as displayed (if you have a customized view, hidden columns will pop into existance when you move the relevant encoder, then go away again). Be aware that the columns with a folder structure (like Locations) do NOT navigate well at this time. The selection sort of jumps down the top level of folders, then into the sub folders or items...there is some method here I am missing to do this better. In practice I found this to be not super annoying, but ymmv.
 
 ##### Page 1
-|Control  |Function  |Shift  |
-|-  |-  |-  |
-|Encoders 1-4  |-  |-  |
-|Encoder 5  |Navigates the category column, if present  |-  |
-|Encoder 6  |Navigates the tag column, if present  |-  |
-|Encoder 7  |Navigates the creator column, if present  |-  |
-|Encoder 8  |Navigates the preset/device column |-  |
-|Buttons 1-3  |-  |-  |
-|Button 4   |Toggles preset preview  |-  |
-|Button 5   |Cancels selection and closes the browser  |-  |
-|Button 6   |OKs the selection and closes the browser  |-  |
+|Encoders  |Devices |Presets |Multisamples|Samples/Music|
+|-  |-  |-  |- |- |
+|Encoder 1 |Smart Folders |Smart Folders |Smart Folders |Smart Folders |
+|Encoder 2 |-  |-  |- |- |
+|Encoder 3 |-  |Locations |Locations |- |
+|Encoder 4 |Locations  |Devices  |File Type |- |
+|Encoder 5 |File Type  |Category|Category |- |
+|Encoder 6 |Category  |Tags  |Tags |File Type |
+|Encoder 7 |Creator |Creator  |Creator |Locations |
+|Encoder 8 |Results |Results |Results |Results |
+
+|Buttons|Browser Modes |
+|- |-|
+|Arrow Left/Right |change the browser content type (Devices, Presets, Multisamples etc.)|
+|Buttons 1-3  |-|
+|Button 4   |Toggles preset preview  |
+|Button 5   |Cancels selection and closes the browser  |
+|Button 6   |OKs the selection and closes the browser  |
+
 ## Technical Info
 This extension is written in Java to leverage the Hardware abstraction in the API, which I will not describe here because Moss does an excellent job in his Youtube channel, and you should check that out if you want to know more: https://www.youtube.com/watch?v=kTf_SSIyBEg
 
 Additionally, I have imported the Framework folder from the Bitwig repository (https://github.com/bitwig/bitwig-extensions/tree/api-17/src/main/java/com/bitwig/extensions/framework) because, while learning to git gud at both Java and controller scripting, I discovered the Layers defined here and used in a ton of the officially provided scripts. The framework stuff is not at all documented (that I could find, at least) so the TL:DR is that Layers allow multiple layers of control bindings that can be combined, or used to replace, bindings from other layers. This makes what I refer to as "Modes" much easier to conceptualize and program. Example: the Inst (Devices) layer binds the 8 main encoders to the remote control settings for a device in Bitwig, as well as binding the display buttons. Inst 2 (Devices 2nd page) leaves the encoders alone, and only re-binds the display buttons to the new functions displayed for that page. Go back to the first page, and these are deactivated again. Noice. 
 
-
 ## Not Included
-
-The stuff I am aware of that I could, and probably will, improve or add
+The stuff I am aware of that I could, and probably will, improve or add:
 
 1. Automatic recognition of the controller
 2. Track Color on the device, esp for the keys
