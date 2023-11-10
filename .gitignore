@@ -2,4 +2,4 @@ AtomSQ_Java.code-workspace
 junk/
 .vscode/*
 !.vscode/launch.json
-target/
+AtomSQ/Atom SQ/target/
