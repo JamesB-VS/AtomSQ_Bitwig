@@ -34,7 +34,7 @@ public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public String getVersion()
    {
-      return "1.1";
+      return "2.0";
    }
 
    @Override
@@ -58,7 +58,7 @@ public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public int getRequiredAPIVersion()
    {
-      return 17;
+      return 18;
    }
 
    @Override

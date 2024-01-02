@@ -6,7 +6,7 @@
 	<artifactId>atom-sq</artifactId>
 	<packaging>jar</packaging>
 	<name>Atom SQ</name>
-	<version>1.1</version>
+	<version>2.0</version>
 	
 	<repositories>
        <repository>
@@ -20,7 +20,7 @@
 		<dependency>
 			<groupId>com.bitwig</groupId>
 			<artifactId>extension-api</artifactId>
-			<version>17</version>
+			<version>18</version>
 		</dependency>
 	</dependencies>
 
@@ -29,7 +29,7 @@
 		   <plugin>
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-compiler-plugin</artifactId>
-               <version>3.8.0</version>
+               <version>3.9.0</version>
                <configuration>
                   <optimize>true</optimize>
                   <fork>true</fork>
@@ -53,8 +53,8 @@
 						</goals>
 						<configuration>
 							<sourceFile>${project.build.directory}/${project.build.finalName}.jar</sourceFile>
-							<!-- <destinationFile>C:\Users\Nova\Documents\Bitwig Studio\Extensions\AtomSQ.bwextension</destinationFile> -->
-							<destinationFile>${project.build.directory}/${project.build.finalName}\extension\AtomSQ.bwextension</destinationFile>
+							<destinationFile>C:\Users\Nova\Documents\Bitwig Studio\Extensions\AtomSQ.bwextension</destinationFile>
+							<!-- <destinationFile>${project.build.directory}/${project.build.finalName}\extension\AtomSQ.bwextension</destinationFile> -->
 						</configuration>
 					</execution>
 				</executions>
