@@ -36,7 +36,7 @@ public class SysexHandler
     public final int MainL2 = 0x7;
 
     //Button Arrays
-    public int[] sButtonsTitle= {B1L1, B2L1, B3L1, B4L2, B5L2, B6L2 };
+    public final int[] sButtonsTitle= {B1L1, B2L1, B3L1, B4L2, B5L2, B6L2 };
     public int[] sButtonsValue= {B1L2, B2L2, B3L2, B4L1, B5L1, B6L1 };
 
     //Colors

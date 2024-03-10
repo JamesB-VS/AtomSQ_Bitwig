@@ -11,10 +11,8 @@ import java.util.function.BooleanSupplier;
 import com.bitwig.extension.api.Color;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 import com.bitwig.extension.controller.ControllerExtension;
-import com.bitwig.extension.controller.api.AbsoluteHardwarControlBindable;
 import com.bitwig.extension.controller.api.Action;
 import com.bitwig.extension.controller.api.Application;
-import com.bitwig.extension.controller.api.BooleanValue;
 import com.bitwig.extension.controller.api.CursorDevice;
 import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.CursorBrowserFilterItem;
@@ -23,11 +21,9 @@ import com.bitwig.extension.controller.api.CursorDeviceFollowMode;
 import com.bitwig.extension.controller.api.CursorRemoteControlsPage;
 import com.bitwig.extension.controller.api.CursorTrack;
 import com.bitwig.extension.controller.api.HardwareButton;
-import com.bitwig.extension.controller.api.HardwareControl;
 import com.bitwig.extension.controller.api.HardwareControlType;
 import com.bitwig.extension.controller.api.HardwareLightVisualState;
 import com.bitwig.extension.controller.api.HardwareSurface;
-import com.bitwig.extension.controller.api.IntegerValue;
 import com.bitwig.extension.controller.api.MidiExpressions;
 import com.bitwig.extension.controller.api.MidiIn;
 import com.bitwig.extension.controller.api.MidiOut;
@@ -36,9 +32,6 @@ import com.bitwig.extension.controller.api.Parameter;
 import com.bitwig.extension.controller.api.RelativeHardwareKnob;
 import com.bitwig.extension.controller.api.Transport;
 import com.bitwig.extension.controller.api.SendBank;
-import com.bitwig.extension.controller.api.SettableBooleanValue;
-import com.bitwig.extension.controller.api.SettableIntegerValue;
-import com.bitwig.extension.controller.api.SettableRangedValue;
 import com.bitwig.extension.controller.api.Track;
 import com.bitwig.extension.controller.api.TrackBank;
 import com.bitwig.extension.controller.api.MasterTrack;
@@ -50,7 +43,6 @@ import com.bitwig.extension.controller.api.RelativeHardwarControlBindable;
 
 //Bitwig Framework components
 import com.bitwig.extensions.framework.Layer;
-import com.bitwig.extensions.framework.LayerGroup;
 import com.bitwig.extensions.framework.Layers;
 
 //Local components
@@ -285,8 +277,7 @@ public class AtomSQExtension extends ControllerExtension
    private void inithardwareSurface(ControllerHost mHost)
    {
       //called in Init
-      final ControllerHost host = mHost;
-      final HardwareSurface surface = host.createHardwareSurface();
+       final HardwareSurface surface = mHost.createHardwareSurface();
       mHardwareSurface = surface;
       surface.setPhysicalSize(400, 200);
 
@@ -327,7 +318,7 @@ public class AtomSQExtension extends ControllerExtension
       mInstButton.setLabel("Inst");
       mUserButton = createToggleButton("user", hH.CC_USER, hH.ORANGE);
       mUserButton.setLabel("User");
-      mAButton = createToggleButton("a", hH.CC_BTN_A, hH.RED);
+       HardwareButton mAButton = createToggleButton("a", hH.CC_BTN_A, hH.RED);
       mAButton.setLabel("A");
 
       //Buttons
@@ -404,9 +395,7 @@ public class AtomSQExtension extends ControllerExtension
          isOn -> isOn ? HardwareLightVisualState.createForColor(onLightColor, Color.blackColor())
             : HardwareLightVisualState.createForColor(offColor, Color.blackColor()));
       button.setBackgroundLight(light);
-      light.isOn().onUpdateHardware(value -> {
-         mMidiOut.sendMidi(0xB0, controlNumber, value ? 127 : 0);
-      });
+      light.isOn().onUpdateHardware(value -> mMidiOut.sendMidi(0xB0, controlNumber, value ? 127 : 0));
 
       return button;
    }
@@ -488,9 +477,9 @@ public class AtomSQExtension extends ControllerExtension
       else
       {
          mTransport.playStartPosition().set(up);
-      };
-     
-    }  
+      }
+
+   }
 
    public void moveDeviceLeft() 
    {
@@ -633,26 +622,26 @@ public class AtomSQExtension extends ControllerExtension
 
    private void activateLayer(final Layer layer, final Layer leaveit) 
    {
-      Layer mLeaveIt = leaveit;
-      final String layername = layer.getName().toString();
+       final String layername = layer.getName();
       mHost.println("requested layer to activate: "+layername);
 
       for (Layer sts : mActiveLayers)
       {
-         String stsname = sts.getName().toString();
+         String stsname = sts.getName();
          //mHost.println("layer to evaluate: "+stsname);
          //moved the last layer functionality out of flush so it can indicate the previous layer in activateLayer()
          //V1.1 Preset Browser. changing to a switch, is easier to read and write.
          //it would be sweet to do this with the layers instead of thenames, but switch cannot do that.
          switch (stsname){
-            case "Shift": continue;
-            case "Browser": continue;
-            case "Base": continue;
-            case "DeviceBrowser": continue;
-            case "PresetBrowser": continue;
-            case "MultiBrowser": continue;
-            case "SamplesBrowser": continue;
-            default: mLastLayer = sts;
+            case "Shift":
+             case "SamplesBrowser":
+             case "MultiBrowser":
+             case "PresetBrowser":
+             case "DeviceBrowser":
+             case "Base":
+             case "Browser":
+                 continue;
+             default: mLastLayer = sts;
          }
       }
        
@@ -662,9 +651,12 @@ public class AtomSQExtension extends ControllerExtension
       { 
          //String alayername = alayer.getName().toString();
          //mHost.println("iteration layer is: "+alayername);
-         if (alayer == mBaseLayer){continue;}
-         else if (alayer == mShiftLayer){continue;}
-         else if (alayer == mLeaveIt){continue;}
+         if (alayer == mBaseLayer){
+         }
+         else if (alayer == mShiftLayer){
+         }
+         else if (alayer == leaveit){
+         }
          else if (alayer == layer){
             //mHost.println("activating layer: "+alayername);
             alayer.activate();}
@@ -683,7 +675,7 @@ public class AtomSQExtension extends ControllerExtension
    {
       mActiveLayers.clear();
       int mLayersCount = mLayers.getLayers().size();
-      mHost.println("Initialized layer count: "+ Integer.toString (mLayersCount));
+      mHost.println("Initialized layer count: "+ mLayersCount);
       for ( Layer str : mLayerList )
       {
          if (str.isActive()) {mActiveLayers.add(str);}
@@ -701,8 +693,8 @@ public class AtomSQExtension extends ControllerExtension
 
       //Master Controls
       //Encoder 9
-     final HardwareActionBindable inc = mHost.createAction(() ->  changePlayPosition(1.0),  () -> "+");;
-      final HardwareActionBindable dec = mHost.createAction(() -> changePlayPosition(-1.0),  () -> "-");
+     final HardwareActionBindable inc = mHost.createAction(() ->  changePlayPosition(1.0),  () -> "+");
+       final HardwareActionBindable dec = mHost.createAction(() -> changePlayPosition(-1.0),  () -> "-");
       mBaseLayer.bind(mEncoders[8], mHost.createRelativeHardwareControlStepTarget(inc, dec));
 
       //left and right shift function for undo/redo
@@ -753,9 +745,9 @@ public class AtomSQExtension extends ControllerExtension
          }
          else{activateLayer(mInstEmptyLayer, null);
          DM.InstEmptyMode();
-         };
+         }
 
-         });
+      });
 
       mBaseLayer.bindPressed(mEditorButton, () -> {
          activateLayer(mEditLayer, null);
@@ -794,12 +786,12 @@ public class AtomSQExtension extends ControllerExtension
       //TODO if there is a way to identify the panels by name, this would be better than above/below
       mBaseLayer.bindToggle(mUpButton, mCursorTrack.selectPreviousAction(), mCursorTrack.hasPrevious());
       mBaseLayer.bindToggle(mDownButton, mCursorTrack.selectNextAction(), mCursorTrack.hasNext());
-      mBaseLayer.bindPressed(mUpButton, () -> {mApplication.focusPanelAbove();});
-      mBaseLayer.bindPressed(mDownButton, () -> {mApplication.focusPanelAbove();});
+      mBaseLayer.bindPressed(mUpButton, () -> mApplication.focusPanelAbove());
+      mBaseLayer.bindPressed(mDownButton, () -> mApplication.focusPanelAbove());
       mBaseLayer.bindToggle(mLeftButton, mCursorDevice.selectPreviousAction(),mCursorDevice.hasPrevious());
       mBaseLayer.bindToggle(mRightButton, mCursorDevice.selectNextAction(), mCursorDevice.hasNext());
-      mBaseLayer.bindPressed(mLeftButton, () -> {mApplication.focusPanelBelow();});
-      mBaseLayer.bindPressed(mRightButton, () -> {mApplication.focusPanelBelow();});
+      mBaseLayer.bindPressed(mLeftButton, () -> mApplication.focusPanelBelow());
+      mBaseLayer.bindPressed(mRightButton, () -> mApplication.focusPanelBelow());
 
       //only done in the base layer, because base layer.
       mBaseLayer.activate();
@@ -809,18 +801,10 @@ public class AtomSQExtension extends ControllerExtension
    {
       //this can coincide with other shift functions in the base layer!
       mShiftLayer.bind(mEncoders[8], mMasterTrack.volume());
-      mShiftLayer.bindPressed(mUpButton, () ->{
-         mApplication.focusPanelAbove();
-      } );
-      mShiftLayer.bindPressed(mDownButton, () ->{
-         mApplication.focusPanelBelow();
-      } );
-      mShiftLayer.bindPressed(mLeftButton, () ->{
-         mApplication.focusPanelToLeft();
-      } );
-      mShiftLayer.bindPressed(mRightButton, () ->{
-         mApplication.focusPanelToRight();
-      } );
+      mShiftLayer.bindPressed(mUpButton, () -> mApplication.focusPanelAbove());
+      mShiftLayer.bindPressed(mDownButton, () -> mApplication.focusPanelBelow());
+      mShiftLayer.bindPressed(mLeftButton, () -> mApplication.focusPanelToLeft());
+      mShiftLayer.bindPressed(mRightButton, () -> mApplication.focusPanelToRight());
    }
 
    private void createSongLayer()
@@ -835,8 +819,8 @@ public class AtomSQExtension extends ControllerExtension
       mSongLayer.bindToggle(m3Button, mCursorTrack.arm());
       //mSongLayer.bindToggle(m4Button, mCursorDevice.isEnabled());
       //V1.1 adding lights to up/Down buttons
-      mSongLayer.bindToggle(m5Button, () ->{moveTrackUp();}, mCursorTrack.hasPrevious() );
-      mSongLayer.bindToggle(m6Button, () ->{moveTrackDown();}, mCursorTrack.hasNext());
+      mSongLayer.bindToggle(m5Button, this::moveTrackUp, mCursorTrack.hasPrevious() );
+      mSongLayer.bindToggle(m6Button, this::moveTrackDown, mCursorTrack.hasNext());
 
       //Track Encoders
       mSongLayer.bind (mEncoders[6], mCursorTrack.pan());
@@ -861,9 +845,9 @@ public class AtomSQExtension extends ControllerExtension
       mSong2Layer.bindToggle(m1Button, mCursorTrack.isActivated());
       mSong2Layer.bindPressed(m2Button, () -> {mApplication.focusPanelAbove(); mApplication.duplicate();});
       mSong2Layer.bindPressed(m3Button, () -> {mApplication.focusPanelAbove(); mCursorTrack.deleteObject();});
-      mSong2Layer.bindPressed(m4Button, () -> {mApplication.createAudioTrack(mCursorTrack.position().get()+1);});  
-      mSong2Layer.bindPressed(m5Button, () -> {mApplication.createInstrumentTrack(mCursorTrack.position().get()+1);});  
-      mSong2Layer.bindPressed(m6Button, () -> {mApplication.createEffectTrack(mCursorTrack.position().get()+1);});  
+      mSong2Layer.bindPressed(m4Button, () -> mApplication.createAudioTrack(mCursorTrack.position().get()+1));
+      mSong2Layer.bindPressed(m5Button, () -> mApplication.createInstrumentTrack(mCursorTrack.position().get()+1));
+      mSong2Layer.bindPressed(m6Button, () -> mApplication.createEffectTrack(mCursorTrack.position().get()+1));
    }
 
    private void createInstLayer()
@@ -881,8 +865,8 @@ public class AtomSQExtension extends ControllerExtension
       mInstLayer.bindToggle(m3Button, mCursorDevice.isExpanded(), mCursorDevice.isExpanded());
       mInstLayer.bindToggle(m4Button, mCursorDevice.isRemoteControlsSectionVisible(), mCursorDevice.isRemoteControlsSectionVisible());
      //V1.1 adding lights to these buttons
-      mInstLayer.bindToggle(m5Button, () ->{moveDeviceLeft();}, mCursorDevice.hasPrevious() );
-      mInstLayer.bindToggle(m6Button, () ->{moveDeviceRight();}, mCursorDevice.hasNext());
+      mInstLayer.bindToggle(m5Button, this::moveDeviceLeft, mCursorDevice.hasPrevious() );
+      mInstLayer.bindToggle(m6Button, this::moveDeviceRight, mCursorDevice.hasNext());
         
       //Encoders
       for (int i = 0; i < 8; i++)
@@ -910,9 +894,9 @@ public class AtomSQExtension extends ControllerExtension
       //mInst2Layer.bindToggle(m5Button, mCursorDevice.isMacroSectionVisible()); //macro is wrong, want modulation, cannot find rn.
       mInst2Layer.bindPressed(m2Button, () -> {mApplication.focusPanelBelow(); mApplication.duplicate();});
       mInst2Layer.bindPressed(m3Button, () -> {mApplication.focusPanelBelow(); mCursorDevice.deleteObject();});
-      mInst2Layer.bindPressed(m4Button, () -> {mCursorDevice.beforeDeviceInsertionPoint().browse();});
-      mInst2Layer.bindPressed(m5Button, () -> {startPresetBrowsing();});
-      mInst2Layer.bindPressed(m6Button, () -> {mCursorDevice.afterDeviceInsertionPoint().browse();});
+      mInst2Layer.bindPressed(m4Button, () -> mCursorDevice.beforeDeviceInsertionPoint().browse());
+      mInst2Layer.bindPressed(m5Button, this::startPresetBrowsing);
+      mInst2Layer.bindPressed(m6Button, () -> mCursorDevice.afterDeviceInsertionPoint().browse());
    }
 
    //V1.1 adding new layer for when Track has no devices
@@ -924,12 +908,12 @@ public class AtomSQExtension extends ControllerExtension
       mInstEmptyLayer.bind(() -> true, mInstButton);
 
       //V1.1 The light-on indicator is not ideal...maybe there is a prettier way than cursor track?
-      mInstEmptyLayer.bindPressed(m1Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();});
-      mInstEmptyLayer.bindPressed(m2Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();});
-      mInstEmptyLayer.bindPressed(m3Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();});
-      mInstEmptyLayer.bindPressed(m4Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();});
-      mInstEmptyLayer.bindPressed(m5Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();});
-      mInstEmptyLayer.bindPressed(m6Button, () -> {mCursorTrack.startOfDeviceChainInsertionPoint().browse();});
+      mInstEmptyLayer.bindPressed(m1Button, () -> mCursorTrack.startOfDeviceChainInsertionPoint().browse());
+      mInstEmptyLayer.bindPressed(m2Button, () -> mCursorTrack.startOfDeviceChainInsertionPoint().browse());
+      mInstEmptyLayer.bindPressed(m3Button, () -> mCursorTrack.startOfDeviceChainInsertionPoint().browse());
+      mInstEmptyLayer.bindPressed(m4Button, () -> mCursorTrack.startOfDeviceChainInsertionPoint().browse());
+      mInstEmptyLayer.bindPressed(m5Button, () -> mCursorTrack.startOfDeviceChainInsertionPoint().browse());
+      mInstEmptyLayer.bindPressed(m6Button, () -> mCursorTrack.startOfDeviceChainInsertionPoint().browse());
    }
 
    private void createEditLayer()
@@ -948,11 +932,11 @@ public class AtomSQExtension extends ControllerExtension
       mBrowserLayer.bindPressed(m5Button, mPopupBrowser.cancelAction());
       mBrowserLayer.bindPressed(m6Button, mPopupBrowser.commitAction());
       //V1.1 adding browser mode toggles to arrow keys
-      mBrowserLayer.bindToggle(mLeftButton, () -> {mPopupBrowser.selectedContentTypeIndex().inc(-1);},() -> (mPopupBrowser.selectedContentTypeIndex().getAsInt() != 0) );
-      mBrowserLayer.bindToggle(mRightButton, () -> {mPopupBrowser.selectedContentTypeIndex().inc(1);}, () -> (mPopupBrowser.selectedContentTypeIndex().getAsInt() != 4) );
+      mBrowserLayer.bindToggle(mLeftButton, () -> mPopupBrowser.selectedContentTypeIndex().inc(-1),() -> (mPopupBrowser.selectedContentTypeIndex().getAsInt() != 0) );
+      mBrowserLayer.bindToggle(mRightButton, () -> mPopupBrowser.selectedContentTypeIndex().inc(1), () -> (mPopupBrowser.selectedContentTypeIndex().getAsInt() != 4) );
       //TODO two ways to do this...one in-line and the other with a boolean supplier....should pick one.
-      mBrowserLayer.bindToggle(mUpButton,() -> { mDoNothing.run();},  () -> false);
-      mBrowserLayer.bindToggle(mDownButton,() -> { mDoNothing.run();}, mLightsOff);
+      mBrowserLayer.bindToggle(mUpButton,() -> mDoNothing.run(),  () -> false);
+      mBrowserLayer.bindToggle(mDownButton,() -> mDoNothing.run(), mLightsOff);
    }
 
    //Note to self: these further assignments could be left as adjustments to the mBrowser layer..it seems to work. Not sure if this is an advantage anywhere vs new layers. 
@@ -1098,8 +1082,9 @@ public class AtomSQExtension extends ControllerExtension
          case 0: activateLayer(mDeviceBrowserLayer, mBrowserLayer); break;
          case 1: activateLayer(mPresetBrowserLayer, mBrowserLayer);break;
          case 2: activateLayer(mMultiBrowserLayer, mBrowserLayer);break;
-         case 3: activateLayer(mSamplesBrowserLayer, mBrowserLayer);break;
-         case 4: activateLayer(mSamplesBrowserLayer, mBrowserLayer);break;
+         case 3:
+          case 4:
+              activateLayer(mSamplesBrowserLayer, mBrowserLayer);break;
       }
    }
 
@@ -1164,6 +1149,7 @@ public class AtomSQExtension extends ControllerExtension
    public void exit()
 {
    //Exit Live Mode
+   //noinspection OctalInteger
    mMidiOut.sendMidi(143,00,00);
    mHost.showPopupNotification("Atom SQ Exited");
 }
@@ -1190,7 +1176,7 @@ public class AtomSQExtension extends ControllerExtension
    
    private DisplayMode DM;
    public ControllerHost mHost;
-   private static HardwareHandler hH = new HardwareHandler();
+   private static final HardwareHandler hH = new HardwareHandler();
    private MasterTrack mMasterTrack;
    private SendBank mSendBank;
    public int sends;
@@ -1201,10 +1187,28 @@ public class AtomSQExtension extends ControllerExtension
    public Application mApplication;
    private boolean mShift;
    private HardwareSurface mHardwareSurface;
-   private HardwareButton mShiftButton, mUpButton, mDownButton, mLeftButton, mRightButton, mForwardButton,
-      mBackButton, mClickCountInButton, mRecordSaveButton, mPlayLoopButton, mStopUndoButton, mSongButton,
-      mEditorButton, mInstButton, mUserButton,  mAButton, m1Button, m2Button, m3Button, m4Button, m5Button, m6Button;
-   private RelativeHardwareKnob[] mEncoders = new RelativeHardwareKnob[9];
+   private HardwareButton mShiftButton;
+    private HardwareButton mUpButton;
+    private HardwareButton mDownButton;
+    private HardwareButton mLeftButton;
+    private HardwareButton mRightButton;
+    private HardwareButton mForwardButton;
+    private HardwareButton mBackButton;
+    private HardwareButton mClickCountInButton;
+    private HardwareButton mRecordSaveButton;
+    private HardwareButton mPlayLoopButton;
+    private HardwareButton mStopUndoButton;
+    private HardwareButton mSongButton;
+    private HardwareButton mEditorButton;
+    private HardwareButton mInstButton;
+    private HardwareButton mUserButton;
+    private HardwareButton m1Button;
+    private HardwareButton m2Button;
+    private HardwareButton m3Button;
+    private HardwareButton m4Button;
+    private HardwareButton m5Button;
+    private HardwareButton m6Button;
+   private final RelativeHardwareKnob[] mEncoders = new RelativeHardwareKnob[9];
    private final Layers mLayers = new Layers(this)
    {
       @Override
