@@ -34,7 +34,7 @@ public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public String getVersion()
    {
-      return "1.1";
+      return "2.0";
    }
 
    @Override
@@ -58,7 +58,7 @@ public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
    @Override
    public int getRequiredAPIVersion()
    {
-      return 17;
+      return 18;
    }
 
    @Override
@@ -82,15 +82,17 @@ public class AtomSQExtensionDefinition extends ControllerExtensionDefinition
          // and uncomment this when port names are correct.
          list.add(new String[]{"ATM SQ", "MIDIIN2 (ATM SQ)"}, new String[]{"ATM SQ", "MIDIOUT2 (ATM SQ"});
       }
-      else if (platformType == PlatformType.MAC)
+      else //noinspection StatementWithEmptyBody
+         if (platformType == PlatformType.MAC)
       {
-         // TODO: Set the correct names of the ports for auto detection on Windows platform here
+         // TODO: Set the correct names of the ports for auto detection on Apple PCs platform here
          // and uncomment this when port names are correct.
          // list.add(new String[]{"Input Port 0", "Input Port 1"}, new String[]{"Output Port 0", "Output Port 1"});
       }
-      else if (platformType == PlatformType.LINUX)
+      else //noinspection StatementWithEmptyBody
+            if (platformType == PlatformType.LINUX)
       {
-         // TODO: Set the correct names of the ports for auto detection on Windows platform here
+         // TODO: Set the correct names of the ports for auto detection on Linux platform here
          // and uncomment this when port names are correct.
          // list.add(new String[]{"Input Port 0", "Input Port 1"}, new String[]{"Output Port 0", "Output Port 1"});
       }

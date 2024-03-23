@@ -7,7 +7,6 @@ package com.presonus.handler;
 import java.lang.reflect.Method;
 
 import com.bitwig.extension.controller.api.Application;
-import com.bitwig.extension.controller.api.Browser;
 import com.bitwig.extension.controller.api.CursorDevice;
 import com.bitwig.extension.controller.api.ControllerHost;
 import com.bitwig.extension.controller.api.CursorBrowserResultItem;
@@ -20,16 +19,16 @@ import com.bitwig.extension.controller.api.PopupBrowser;
 import com.bitwig.extensions.framework.Layer;
 
 import com.presonus.AtomSQExtension;
-public class DisplayMode  
+@SuppressWarnings("OctalInteger")
+public class DisplayMode
 {
-    private static SysexHandler sH = new SysexHandler();
+    private static final SysexHandler sH = new SysexHandler();
    // private static MidiIn dMidiIn;
    private  MidiOut dMidiOut;
    private ControllerHost dHost;
    private CursorTrack dCursorTrack;
    private CursorDevice dCursorDevice;
-   private AtomSQExtension dASQCE;
-   public Method dLastMode;
+    public Method dLastMode;
    private Layer dBrowserLayer;
    public CursorBrowserResultItem dBrowserResult;
    private Application dApplication;
@@ -37,30 +36,29 @@ public class DisplayMode
    private Layer dInstEmptyLayer;
    private Layer dDeviceBrowserLayer;
    private PopupBrowser dPopupBrowser;
-   private String dPopupBrowsertype;
 
-   public void start(AtomSQExtension Ext)
+    public void start(AtomSQExtension Ext)
    {
-      dASQCE = Ext;
-      dHost = dASQCE.mHost;
+       dHost = Ext.mHost;
       //dASQCE.mHost.println("dhost is: "+dHost.getHostProduct().toString());
-      dMidiOut = dASQCE.mMidiOut;
-      dBrowserLayer = dASQCE.mBrowserLayer;
-      dApplication = dASQCE.mApplication;
-      dCursorTrack = dASQCE.mCursorTrack;
-      dCursorDevice = dASQCE.mCursorDevice;
-      dBrowserResult = dASQCE.mBrowserResult;
+      dMidiOut = Ext.mMidiOut;
+      dBrowserLayer = Ext.mBrowserLayer;
+      dApplication = Ext.mApplication;
+      dCursorTrack = Ext.mCursorTrack;
+      dCursorDevice = Ext.mCursorDevice;
+      dBrowserResult = Ext.mBrowserResult;
       //V1.1
-      dInstEmptyLayer = dASQCE.mInstEmptyLayer;
-      dDeviceBrowserLayer = dASQCE.mDeviceBrowserLayer;
-      dPopupBrowser = dASQCE.mPopupBrowser;
+      dInstEmptyLayer = Ext.mInstEmptyLayer;
+      dDeviceBrowserLayer = Ext.mDeviceBrowserLayer;
+      dPopupBrowser = Ext.mPopupBrowser;
 
     }
       
    public void updateDisplay ()
    {
       //V1.1 Preset Browser. This needs to be above the standard browser layer, as both ar active at the same time. 
-    if(dDeviceBrowserLayer.isActive()){
+       String dPopupBrowsertype;
+       if(dDeviceBrowserLayer.isActive()){
          //Main line 1 
          dPopupBrowsertype = dPopupBrowser.selectedContentTypeName().get();
          String pTrack = dCursorTrack.name().get();

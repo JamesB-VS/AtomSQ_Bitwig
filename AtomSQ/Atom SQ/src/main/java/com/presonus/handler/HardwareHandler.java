@@ -39,7 +39,7 @@ public class HardwareHandler
     public final  int  CC_BTN_4     =39;
     public final  int  CC_BTN_5     =40;
     public final  int  CC_BTN_6     =41;
-    //outside of the INST menu, the encoder and buttons on the right
+    //outside the INST menu, the encoder and buttons on the right
     public final  int  CC_BACK      =42;
     public final  int  CC_FORWARD    =43;
     public final  int  CC_ENCODER_9     =29;
