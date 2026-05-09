@@ -88,7 +88,7 @@ public class DisplayMode
    private ControllerHost dHost;
    private CursorTrack dCursorTrack;
    private CursorDevice dCursorDevice;
-    public ControllerMode lastMode;
+    public ControllerMode lastMode = ControllerMode.SONG;
    private Layer dBrowserLayer;
    public CursorBrowserResultItem dBrowserResult;
    private Application dApplication;
