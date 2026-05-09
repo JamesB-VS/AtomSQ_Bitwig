@@ -1108,44 +1108,48 @@ public class AtomSQExtension extends ControllerExtension
    {
       mHost.println("FLUSH INFO:");
 
-      //Flush actions
-
-
-
       getactiveLayers(mLayers);
-      //v1.1 adding flush to refresh to Inst if track is no longer empty
-      if(mCursorDevice.exists().getAsBoolean() && mInstEmptyLayer.isActive()){
-            mHost.println("FLUSH: mDevice no longer empty");
-            activateLayer(mInstLayer,null);
-            displayMode.InstMode();
-         }
-      if((mInstLayer.isActive() || mInst2Layer.isActive()) && !mCursorDevice.exists().getAsBoolean()){
-            mHost.println("FLUSH: mDevice is now empty");
-            activateLayer(mInstEmptyLayer,null);
-            displayMode.InstEmptyMode();
-         }
-
-      //V1.1 Preset Browser: added this to activate layers in particular when switching when the browser is already open.
-      if(mBrowserLayer.isActive())
-      {
-         //mBrowserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
-         mBrowserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
-         switch(mBrowserlayercontentindex)
-         {
-            case 0: activateLayer(mDeviceBrowserLayer, mBrowserLayer); break;
-            case 1: activateLayer(mPresetBrowserLayer, mBrowserLayer);break;
-            case 2: activateLayer(mMultiBrowserLayer, mBrowserLayer);break;
-            case 3: // placeholder
-             case 4: activateLayer(mSamplesBrowserLayer, mBrowserLayer);break;
-         }
-      }
-
-
+      handleDeviceExistenceChange();
+      handleBrowserLayerSwitch();
 
       mHardwareSurface.updateHardware();
       displayMode.updateDisplay();
+   }
 
-      //V1.1 troubleshooting for display mode issues
+   private void handleDeviceExistenceChange()
+   {
+      if (mCursorDevice.exists().getAsBoolean() && mInstEmptyLayer.isActive()) {
+         mHost.println("FLUSH: mDevice no longer empty");
+         activateLayer(mInstLayer, null);
+         displayMode.InstMode();
+      }
+      if ((mInstLayer.isActive() || mInst2Layer.isActive()) && !mCursorDevice.exists().getAsBoolean()) {
+         mHost.println("FLUSH: mDevice is now empty");
+         activateLayer(mInstEmptyLayer, null);
+         displayMode.InstEmptyMode();
+      }
+   }
+
+   // Activates the correct browser sub-layer based on the currently selected content type.
+   // Content type indices: 0=Device, 1=Preset, 2=Multi, 3-4=Samples
+   private void handleBrowserLayerSwitch()
+   {
+      if (!mBrowserLayer.isActive()) return;
+      mBrowserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
+      switch (mBrowserlayercontentindex)
+      {
+         case 0: activateLayer(mDeviceBrowserLayer,  mBrowserLayer); break;
+         case 1: activateLayer(mPresetBrowserLayer,  mBrowserLayer); break;
+         case 2: activateLayer(mMultiBrowserLayer,   mBrowserLayer); break;
+         case 3:
+         case 4: activateLayer(mSamplesBrowserLayer, mBrowserLayer); break;
+      }
+   }
+
+   // Debug notes — preserved for troubleshooting display mode issues
+   // Uncomment individual blocks and add a flushDebug() call in flush() to re-enable.
+   //
+   //V1.1 troubleshooting for display mode issues
       // String mcdname = mCursorDevice.name().get();
       // mHost.println("mCursorDevice is: "+mcdname);
 
@@ -1196,8 +1200,6 @@ public class AtomSQExtension extends ControllerExtension
       //    String  trackname = track.name().get();
       //    mHost.println("Track"+i+" name is "+trackname);
       // }
-
-   }
 
    @Override
    public void exit()

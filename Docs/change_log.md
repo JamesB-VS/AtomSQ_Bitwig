@@ -118,6 +118,33 @@ private static final class LayerCounts {
 
 **Goal:** Replace cryptic short names with readable ones. Scope limited to the worst offenders; `m`-prefix fields left as-is (consistent within the file, low risk/reward to change now).
 
+---
+
+### AtomSQExtension.java — Method decomposition (`flush()`)
+
+**Goal:** Break `flush()` into focused methods with clear names.
+
+`flush()` reduced from 40+ lines to 7 — now a clean coordinator:
+```java
+public void flush() {
+    getactiveLayers(mLayers);
+    handleDeviceExistenceChange();
+    handleBrowserLayerSwitch();
+    mHardwareSurface.updateHardware();
+    displayMode.updateDisplay();
+}
+```
+
+**Extracted methods:**
+- `handleDeviceExistenceChange()` — switches between `mInstLayer` and `mInstEmptyLayer` when a device is added or removed from the track
+- `handleBrowserLayerSwitch()` — routes to the correct browser sub-layer (Device/Preset/Multi/Samples) based on the selected content type index
+
+**Debug comment block** preserved after the new methods — labelled with instructions to uncomment and wire back into `flush()` when needed.
+
+**Not decomposed:** `createInstLayer()` (already ~30 lines), `activateLayer()` (compact, string-based switch is an architecture issue), `init()` (real fix is class extraction in item 7).
+
+---
+
 | Old | New | Scope |
 |---|---|---|
 | `DisplayMode DM` | `DisplayMode displayMode` | Field declaration + 20 call sites |
