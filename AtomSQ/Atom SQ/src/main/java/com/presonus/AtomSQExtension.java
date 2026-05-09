@@ -40,6 +40,9 @@ public class AtomSQExtension extends ControllerExtension
       static final int TRACK_BANK_SIZE      = 3; // track bank window
    }
 
+   // Set to true to enable verbose console logging for debugging
+   private static final boolean DEBUG = false;
+
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
    {
       super(definition, host);
@@ -465,11 +468,11 @@ public class AtomSQExtension extends ControllerExtension
       if (match)
       {
          mTransport.playStartPosition().inc(num);
-         mHost.println("match must be true");
+         if (DEBUG) mHost.println("match must be true");
       }
       else if (num == -1)
       {
-         mHost.println("match must be false");
+         if (DEBUG) mHost.println("match must be false");
          mTransport.playStartPosition().set(down);
       }
       else
@@ -626,7 +629,7 @@ public class AtomSQExtension extends ControllerExtension
    private void activateLayer(final Layer layer, final Layer leaveit) 
    {
        final String layername = layer.getName();
-      mHost.println("requested layer to activate: "+layername);
+      if (DEBUG) mHost.println("requested layer to activate: "+layername);
 
       for (Layer sts : mActiveLayers)
       {
@@ -678,7 +681,7 @@ public class AtomSQExtension extends ControllerExtension
    {
       mActiveLayers.clear();
       int mLayersCount = mLayers.getLayers().size();
-      mHost.println("Initialized layer count: "+ mLayersCount);
+      if (DEBUG) mHost.println("Initialized layer count: "+ mLayersCount);
       for ( Layer str : mLayerList )
       {
          if (str.isActive()) {mActiveLayers.add(str);}
@@ -1106,7 +1109,7 @@ public class AtomSQExtension extends ControllerExtension
    @Override
    public void flush()
    {
-      mHost.println("FLUSH INFO:");
+      if (DEBUG) mHost.println("FLUSH INFO:");
 
       getactiveLayers(mLayers);
       handleDeviceExistenceChange();
@@ -1114,6 +1117,7 @@ public class AtomSQExtension extends ControllerExtension
 
       mHardwareSurface.updateHardware();
       displayMode.updateDisplay();
+      if (DEBUG) flushDebug();
    }
 
    private void handleDeviceExistenceChange()
@@ -1146,60 +1150,27 @@ public class AtomSQExtension extends ControllerExtension
       }
    }
 
-   // Debug notes — preserved for troubleshooting display mode issues
-   // Uncomment individual blocks and add a flushDebug() call in flush() to re-enable.
-   //
-   //V1.1 troubleshooting for display mode issues
-      // String mcdname = mCursorDevice.name().get();
-      // mHost.println("mCursorDevice is: "+mcdname);
+   // Call from flush() when DEBUG=true — reports device, browser, layer, and track state.
+   private void flushDebug()
+   {
+      mHost.println("mCursorDevice: " + mCursorDevice.name().get());
+      mHost.println("mCursorDevice exists: " + mCursorDevice.exists().getAsBoolean());
 
-      // Boolean mcdexists = mCursorDevice.exists().getAsBoolean();
-      // mHost.println("mCursorDevice exists: "+mcdexists);
+      mHost.println("browser contenttype: " + mPopupBrowser.selectedContentTypeName().get());
+      mHost.println("browser typeindex: " + mPopupBrowser.selectedContentTypeIndex().get());
 
-      // //V1.1 Preset Browser: reporting names. This works just fine. 
-      // mBrowserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
-      // mHost.println("FLUSH: browser contenttype is: "+mBrowserlayercontentname);
-      // mBrowserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
-      // mHost.println("FLUSH: typeindex should be: "+mBrowserlayercontentindex);
+      mHost.println("***Active layers:***");
+      for (Layer sts : mActiveLayers)
+         mHost.println("  " + sts.getName());
+      mHost.println("Last layer: " + mLastLayer.getName());
 
-      //Layer Troubleshooting infos
-      //   mActiveLayers.clear();
-      //    int mLayersCount = mLayers.getLayers().size();
-      //    mHost.println("Initialized layer count: "+ Integer.toString (mLayersCount));
-      //    //List<Layer> mLayerList = mLayers.getLayers();
-      //    for ( Layer str : mLayerList ) {
-      //     // String active = Boolean.toString(str.isActive());
-      //      // mHost.println("Layer:  "+str.getName().toString()+" is active: " +active);
-      //      // mHost.println(active);
-      //    if (str.isActive()) {mActiveLayers.add(str);}
-      //   }
+      for (int i = 0; i < mCDLDBnk.getSizeOfBank(); i++)
+         mHost.println("  device[" + i + "] = " + mCDLDBnk.getDevice(i).name().get());
 
-      //this works too! uses the list of layers above, and that is defined at the very top.
-      //   mHost.println("***These are the active layers:***");
-      //   for (Layer sts : mActiveLayers)
-      //   {
-      //    mHost.println(sts.getName().toString());
-
-      // }
-      // mHost.println("Last Layer is: "+ mLastLayer.getName().toString());
-      
-      // //for testing the calling of devices from the device bank.
-      // String mcdname = mCursorDevice.name().get();
-      // mHost.println("Cursor Device is: "+mcdname);
-      // for (int i = 0; i < mCDLDBnk.getSizeOfBank(); i++) {
-      //    Device device = mCDLDBnk.getDevice(i);
-      //    String  devname = device.name().get();
-      //    mHost.println("device"+i+" name is "+devname);
-      // }
-
-      // //to review track bank
-      // String  mctname = mCursorTrack.name().get();
-      // mHost.println("Cursor Track is: "+mctname);
-      // for (int i = 0; i < mTrackBank.getSizeOfBank(); i++) {
-      //    Track track = mTrackBank.getItemAt(i);
-      //    String  trackname = track.name().get();
-      //    mHost.println("Track"+i+" name is "+trackname);
-      // }
+      mHost.println("Cursor Track: " + mCursorTrack.name().get());
+      for (int i = 0; i < mTrackBank.getSizeOfBank(); i++)
+         mHost.println("  track[" + i + "] = " + mTrackBank.getItemAt(i).name().get());
+   }
 
    @Override
    public void exit()

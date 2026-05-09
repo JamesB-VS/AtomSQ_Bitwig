@@ -150,6 +150,30 @@ public void flush() {
 | `DisplayMode DM` | `DisplayMode displayMode` | Field declaration + 20 call sites |
 | `HardwareHandler hH` | `HardwareHandler hardwareHandler` | Field declaration + all call sites |
 
+---
+
+### AtomSQExtension.java — Logging (DEBUG flag)
+
+**Goal:** Replace the mix of always-on noisy printlns and commented-out debug code with a single flag.
+
+**Added:** `private static final boolean DEBUG = false;`
+
+**Wrapped behind `if (DEBUG)`** — calls that fire frequently or are pure debug noise:
+- `"FLUSH INFO:"` — was firing every frame
+- `"Initialized layer count:"` — was firing every flush via `getactiveLayers()`
+- `"requested layer to activate:"` — fires on every layer switch
+- `"match must be true/false"` in `changePlayPosition()`
+
+**Always-on** — kept as-is (meaningful state-change or startup events):
+- `"INIT: mCursorDevice is currently..."` / `"INIT: complete"` / `"Inst Layer: mCursorDevice..."`
+- `"FLUSH: mDevice no longer empty"` / `"FLUSH: mDevice is now empty"` (only fires on state change)
+
+**Converted commented debug block → `flushDebug()` method** — the old block of commented-out flush diagnostics is now a real private method called from `flush()` via `if (DEBUG) flushDebug()`. Reports device, browser, layer, and track state in one call.
+
+**Usage:** Set `DEBUG = true` and rebuild to re-enable all verbose logging. Flip back to `false` for normal use.
+
+---
+
 **Bonus:** Removed 3 unused imports uncovered during the rename:
 - `java.beans.Encoder` (wrong Encoder type — never used)
 - `com.bitwig.extension.callback.ValueChangedCallback`
