@@ -19,7 +19,7 @@ import com.bitwig.extensions.framework.Layers;
 
 //Local components
 import com.presonus.handler.DisplayMode;
-import com.presonus.handler.HardwareHandler;
+import com.presonus.handler.HardwareConstants;
 import com.presonus.handler.DoNothing;
 
 //V2.0 added for encoder monitoring...maybe this works?
@@ -1203,7 +1203,7 @@ public class AtomSQExtension extends ControllerExtension
 
    private DisplayMode displayMode;
    public ControllerHost mHost;
-   private static final HardwareHandler hardwareHandler = new HardwareHandler();
+   private static final HardwareConstants hardwareHandler = new HardwareConstants();
    private MasterTrack mMasterTrack;
    private SendBank mSendBank;
    public int sends;

@@ -5,7 +5,7 @@ package com.presonus.handler;
 
 import com.bitwig.extension.api.Color;
 
-public class HardwareHandler 
+public class HardwareConstants
 {
     //Variables from Hardware
     // Transport
@@ -43,7 +43,7 @@ public class HardwareHandler
     public final  int  CC_BACK      =42;
     public final  int  CC_FORWARD    =43;
     public final  int  CC_ENCODER_9     =29;
-    
+
     //device name, note on, note off, pressure, ribbon, pitchbend
     public final String  DEV_NAME      = "Keyboard";
     public final  String  NOTE_ON       = "99????";
@@ -64,7 +64,7 @@ public class HardwareHandler
 
     //Encoders
     public final  int  CC_ENCODER_1     = 14;
-    //Enc 2-8 not needed because the encoders are created in an iteration below. 
+    //Enc 2-8 not needed because the encoders are created in an iteration below.
 
     //ATOM colors
     public  final Color WHITE = Color.fromRGB(1, 1, 1);
