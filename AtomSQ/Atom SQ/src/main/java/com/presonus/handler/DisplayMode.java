@@ -4,7 +4,7 @@
 
 package com.presonus.handler;
 
-import java.lang.reflect.Method;
+import java.util.Map;
 
 import com.bitwig.extension.controller.api.Application;
 import com.bitwig.extension.controller.api.CursorDevice;
@@ -22,13 +22,73 @@ import com.presonus.AtomSQExtension;
 @SuppressWarnings("OctalInteger")
 public class DisplayMode
 {
+    public enum ControllerMode {
+        SONG, SONG2, INST, INST_EMPTY, INST2, INST3, EDIT, USER, BROWSER
+    }
+
+    private enum PanelFocus { ABOVE, BELOW, NONE }
+
+    private record DisplayConfig(
+        String notification,
+        PanelFocus panelFocus,
+        String[] buttonTitles,
+        String buttonColor,
+        boolean resetEncoder9,
+        boolean useKeyboardConfig,
+        String extraSysex
+    ) {}
+
+    private static final String SYSEX_DISPLAY_INIT    = "F0000106221300F7";
+    private static final String SYSEX_BUTTON_CONFIG   = "F0000106221400F7";
+    private static final String SYSEX_KEYBOARD_CONFIG = "F0000106221401F7";
+    private static final String SYSEX_LIVE_MODE       = "F0000106221301F7";
+    private static final String SYSEX_EXTRA_LINE      = "F0 00 01 06 22 12 06 00 5B 5B 00 F7";
+
     private static final SysexHandler sH = new SysexHandler();
-   // private static MidiIn dMidiIn;
+
+    private static final Map<ControllerMode, DisplayConfig> DISPLAY_CONFIGS = Map.ofEntries(
+        Map.entry(ControllerMode.SONG, new DisplayConfig(
+            "Tracks", PanelFocus.ABOVE,
+            new String[]{"Mute", "Solo", "Arm", "", "Move Up", "Move Down"},
+            sH.yellow, false, false, null)),
+        Map.entry(ControllerMode.SONG2, new DisplayConfig(
+            "Tracks", PanelFocus.NONE,
+            new String[]{"Active", "Copy", "Delete", "New Audio", "New Inst", "New FX"},
+            sH.yellow, false, false, null)),
+        Map.entry(ControllerMode.INST, new DisplayConfig(
+            "Devices", PanelFocus.BELOW,
+            new String[]{"Enabled", "Wndw", "Expand", "RCtrls", "RCPage Down", "RCPage Up"},
+            sH.white, true, false, null)),
+        Map.entry(ControllerMode.INST_EMPTY, new DisplayConfig(
+            "Devices", PanelFocus.BELOW,
+            new String[]{"New Dev", "New Dev", "New Dev", "New Dev", "New Dev", "New Dev"},
+            sH.white, true, false, null)),
+        Map.entry(ControllerMode.INST2, new DisplayConfig(
+            null, PanelFocus.NONE,
+            new String[]{"", "Copy", "Delete", "<New", "Preset", "New>"},
+            sH.white, true, false, null)),
+        Map.entry(ControllerMode.INST3, new DisplayConfig(
+            null, PanelFocus.NONE,
+            new String[]{"", "", "", "", "Move Left", "Move Right"},
+            sH.white, true, false, null)),
+        Map.entry(ControllerMode.EDIT, new DisplayConfig(
+            "Nothing to see here", PanelFocus.NONE,
+            new String[]{"", "", "", "", "", ""},
+            sH.yellow, false, false, SYSEX_EXTRA_LINE)),
+        Map.entry(ControllerMode.USER, new DisplayConfig(
+            "Keyboard", PanelFocus.NONE,
+            null, null, false, true, null)),
+        Map.entry(ControllerMode.BROWSER, new DisplayConfig(
+            "Browser", PanelFocus.NONE,
+            new String[]{"", "", "", "Preview", "Cancel", "OK"},
+            sH.magenta, false, false, SYSEX_EXTRA_LINE))
+    );
+
    private  MidiOut dMidiOut;
    private ControllerHost dHost;
    private CursorTrack dCursorTrack;
    private CursorDevice dCursorDevice;
-    public Method dLastMode;
+    public ControllerMode lastMode;
    private Layer dBrowserLayer;
    public CursorBrowserResultItem dBrowserResult;
    private Application dApplication;
@@ -167,215 +227,67 @@ public class DisplayMode
       dMidiOut.sendSysex("F07E7F0601F7");
       //Live Mode handshake
       dMidiOut.sendMidi(143,00,01);
-      //this line alone turns on the lights (paste in the console)
-      dMidiOut.sendSysex("F0000106221300F7");
-      //this line alone makes the Inst menu at least come back to life!
-      //it also takes command of the nav keys on the right...if set to 0, the display still shows and navigates, but thie keys ALSO send midi messages
-      //dMidiOut.sendSysex("F0000106221401F7");
-      dMidiOut.sendSysex("F0000106221301F7");
+      // this line alone turns on the lights (paste in the console)
+      dMidiOut.sendSysex(SYSEX_DISPLAY_INIT);
+      // SYSEX_KEYBOARD_CONFIG ("...1401F7") can replace SYSEX_LIVE_MODE below if nav keys
+      // should not send MIDI messages; current choice keeps them active
+      dMidiOut.sendSysex(SYSEX_LIVE_MODE);
    }
 
-   //changing private to public for the mode finder bits in the layer change above
-   public void SongMode ()
+   public void applyMode(ControllerMode mode)
    {
-      //dHost.println("SongMode");
-      dHost.showPopupNotification("Tracks");
-      dApplication.focusPanelAbove();
+      // BROWSER is transient — don't overwrite lastMode so it can be restored on close
+      if (mode != ControllerMode.BROWSER)
+         lastMode = mode;
+      DisplayConfig cfg = DISPLAY_CONFIGS.get(mode);
+      if (cfg == null) return;
 
-      //dApplication.setPanelLayout("MIX");
-      dMidiOut.sendSysex("F0000106221300F7");
-      dMidiOut.sendSysex("F0000106221400F7");
-   
-      //button titles
-      String[] mTitles= {"Mute", "Solo", "Arm", "", "Move Up", "Move Down"};
-      for (int i = 0; i < 6; i++) 
-      {
-         final String msg = mTitles[i];
-         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
-         dMidiOut.sendSysex(sysex);
+      if (cfg.notification() != null)
+         dHost.showPopupNotification(cfg.notification());
+
+      switch (cfg.panelFocus()) {
+         case ABOVE -> dApplication.focusPanelAbove();
+         case BELOW -> dApplication.focusPanelBelow();
+         case NONE  -> {}
       }
-   dMidiOut.sendSysex("F0000106221301F7");
+
+      if (!cfg.useKeyboardConfig()) {
+         dMidiOut.sendSysex(SYSEX_DISPLAY_INIT);
+         dMidiOut.sendSysex(SYSEX_BUTTON_CONFIG);
+
+         if (cfg.buttonTitles() != null) {
+            for (int i = 0; i < cfg.buttonTitles().length; i++) {
+               String msg = cfg.buttonTitles()[i];
+               byte[] sysex = SysexBuilder.fromHex(sH.sheader)
+                  .addByte(sH.sButtonsTitle[i])
+                  .addHex(cfg.buttonColor())
+                  .addByte(sH.spc)
+                  .addString(msg, msg.length())
+                  .terminate();
+               dMidiOut.sendSysex(sysex);
+            }
+         }
+
+         if (cfg.resetEncoder9())
+            dMidiOut.sendMidi(176, 29, 0);
+
+         if (cfg.extraSysex() != null)
+            dMidiOut.sendSysex(cfg.extraSysex());
+      } else {
+         dMidiOut.sendSysex(SYSEX_KEYBOARD_CONFIG);
+      }
+
+      dMidiOut.sendSysex(SYSEX_LIVE_MODE);
    }
 
-   public void Song2Mode ()
-   {
-      //dHost.println("SongMode");
-      dHost.showPopupNotification("Tracks");
-      //dApplication.setPanelLayout("MIX");
-      dMidiOut.sendSysex("F0000106221300F7");
-      dMidiOut.sendSysex("F0000106221400F7");
-   
-      //button titles
-      String[] mTitles= {"Active", "Copy", "Delete", "New Audio", "New Inst", "New FX"};
-      for (int i = 0; i < 6; i++) 
-      {
-         final String msg = mTitles[i];
-         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
-         dMidiOut.sendSysex(sysex);
-      }
-      dMidiOut.sendSysex("F0000106221301F7");
-   }
- 
-    public void InstMode ()
-   {
-   dHost.showPopupNotification("Devices");
-      dApplication.focusPanelBelow();
-      dHost.println("InstMode");
-      //dHost.showPopupNotification("Instrument Mode");
-      //dApplication.setPanelLayout("ARRANGE");
-
-      //configure display
-      dMidiOut.sendSysex("F0000106221300F7");
-      dMidiOut.sendSysex("F0000106221400F7");
-   
-      //button titles
-      String[] mTitles= {"Enabled", "Wndw", "Expand", "RCtrls", "RCPage Down", "RCPage Up" /*, "Move Left", "Move Right"*/};
-      for (int i = 0; i < 6; i++) 
-      {
-         final String msg = mTitles[i];
-         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
-         dMidiOut.sendSysex(sysex);
-      }
-
-      // Encoder 9...must recenter it? 00 and 127 have no other visible effect.
-      dMidiOut.sendMidi(176, 29, 00);
-
-      //turn on button light
-      dMidiOut.sendSysex("F0000106221301F7");
-   }
- 
-//v1.1 Adding new mode for an empty track. only new device button
-   //changing private to public for the mode finder bits in the layer change above
-    public void InstEmptyMode ()
-   {
-   dHost.showPopupNotification("Devices");
-      dApplication.focusPanelBelow();
-      dHost.println("InstEmptyMode");
-      //dHost.showPopupNotification("Instrument Mode");
-      //dApplication.setPanelLayout("ARRANGE");
-
-      //configure display
-      dMidiOut.sendSysex("F0000106221300F7");
-      dMidiOut.sendSysex("F0000106221400F7");
-   
-      //button titles
-      String[] mTitles= {"New Dev","New Dev","New Dev","New Dev","New Dev","New Dev",};
-      for (int i = 0; i < 6; i++) 
-      {
-         final String msg = mTitles[i];
-         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
-         dMidiOut.sendSysex(sysex);
-      }
-
-      // Encoder 9...must recenter it? 00 and 127 have no other visible effect.
-      dMidiOut.sendMidi(176, 29, 00);
-
-      //turn on button light
-      dMidiOut.sendSysex("F0000106221301F7");
-   }
-
-    public void Inst2Mode ()
-    {
-       //dHost.println("InstMode");
-       //dHost.showPopupNotification("Instrument Mode");
-       //dApplication.setPanelLayout("ARRANGE");
-
-       //configure display
-       dMidiOut.sendSysex("F0000106221300F7");
-       dMidiOut.sendSysex("F0000106221400F7");
-      
-       //button titles
-       String[] mTitles= {"", "Copy", "Delete", "<New", "Preset", "New>"};
-       
-       for (int i = 0; i < 6; i++) 
-       {
-          final String msg = mTitles[i];
-          byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
-          dMidiOut.sendSysex(sysex);
-       }
-       // Encoder 9...must recenter it? 00 and 127 have no other visible effect.
-       dMidiOut.sendMidi(176, 29, 00);
-       dMidiOut.sendSysex("F0000106221301F7");
-    }
-
-    public void Inst3Mode ()
-    {
-        //dHost.println("InstMode");
-        //dHost.showPopupNotification("Instrument Mode");
-        //dApplication.setPanelLayout("ARRANGE");
-
-        //configure display
-        dMidiOut.sendSysex("F0000106221300F7");
-        dMidiOut.sendSysex("F0000106221400F7");
-
-        //button titles
-        String[] mTitles= {"", "", "", "", "Move Left", "Move Right"};
-
-        for (int i = 0; i < 6; i++)
-        {
-            final String msg = mTitles[i];
-            byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
-            dMidiOut.sendSysex(sysex);
-        }
-        // Encoder 9...must recenter it? 00 and 127 have no other visible effect.
-        dMidiOut.sendMidi(176, 29, 00);
-        dMidiOut.sendSysex("F0000106221301F7");
-    }
-    public void EditMode ()
-    {
-      //dHost.println("EditMode");
-      dHost.showPopupNotification("Nothing to see here");
-
-      dMidiOut.sendSysex("F0000106221300F7");
-      dMidiOut.sendSysex("F0000106221400F7");
-
-      //button titles
-      String[] mTitles= {"", "", "", "", "", ""};
-      
-      for (int i = 0; i < 6; i++) 
-      {
-      final String msg = mTitles[i];
-         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.yellow).addByte(sH.spc).addString(msg, msg.length()).terminate();
-         dMidiOut.sendSysex(sysex);
-      }
-
-      //line 1
-      dMidiOut.sendSysex("F0 00 01 06 22 12 06 00 5B 5B 00 F7");
- 
-      dMidiOut.sendSysex("F0000106221301F7");
-    }
- 
-    public void UserMode ()
-    {
-      dHost.println("Keyboard");
-      dHost.showPopupNotification("Keyboard");
-      dMidiOut.sendSysex("F0000106221401F7");
-      dMidiOut.sendSysex("F0000106221301F7");
-    }
- 
-    public void BrowserMode ()
-    {
-      //dHost.println("EditMode");
-      dHost.showPopupNotification("Browser");
-      dMidiOut.sendSysex("F0000106221300F7");
-      dMidiOut.sendSysex("F0000106221400F7");
-
-      //button titles
-      String[] mTitles= {"", "", "", "Preview", "Cancel", "OK"};
-      for (int i = 0; i < 6; i++) 
-      {
-      final String msg = mTitles[i];
-         byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.magenta).addByte(sH.spc).addString(msg, msg.length()).terminate();
-         dMidiOut.sendSysex(sysex);
-      }
-      dMidiOut.sendSysex("F0 00 01 06 22 12 06 00 5B 5B 00 F7");
-      dMidiOut.sendSysex("F0000106221301F7");
-    }
-
-    public void ControlDisplayMode ()
-    {
-
-
-    }
+   public void SongMode()      { applyMode(ControllerMode.SONG); }
+   public void Song2Mode()     { applyMode(ControllerMode.SONG2); }
+   public void InstMode()      { applyMode(ControllerMode.INST); }
+   public void InstEmptyMode() { applyMode(ControllerMode.INST_EMPTY); }
+   public void Inst2Mode()     { applyMode(ControllerMode.INST2); }
+   public void Inst3Mode()     { applyMode(ControllerMode.INST3); }
+   public void EditMode()      { applyMode(ControllerMode.EDIT); }
+   public void UserMode()      { applyMode(ControllerMode.USER); }
+   public void BrowserMode()   { applyMode(ControllerMode.BROWSER); }
 
 }

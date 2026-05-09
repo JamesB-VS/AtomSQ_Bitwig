@@ -3,16 +3,13 @@
 // Licensed under GPLv3 - https://www.gnu.org/licenses/gpl-3.0.txt
 package com.presonus;
 
-import java.beans.Encoder;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BooleanSupplier;
 
 
 import com.bitwig.extension.api.Color;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 
-import com.bitwig.extension.callback.ValueChangedCallback;
 import com.bitwig.extension.controller.ControllerExtension;
 import com.bitwig.extension.controller.api.*;
 
@@ -21,7 +18,6 @@ import com.bitwig.extensions.framework.Layer;
 import com.bitwig.extensions.framework.Layers;
 
 //Local components
-import com.bitwig.extensions.framework.RelativeHardwareControlBinding;
 import com.presonus.handler.DisplayMode;
 import com.presonus.handler.HardwareHandler;
 import com.presonus.handler.DoNothing;
@@ -31,6 +27,19 @@ import com.bitwig.extension.callback.BooleanValueChangedCallback;
 
 public class AtomSQExtension extends ControllerExtension
 {
+   private static final class EncoderConfig {
+      static final int COUNT               = 9;   // total encoders including encoder 9
+      static final int SENSITIVITY_NORMAL  = 100; // encoders 1–8
+      static final int SENSITIVITY_STEPPED = 127; // encoder 9 (transport / master volume)
+   }
+
+   private static final class LayerCounts {
+      static final int SEND_COUNT           = 6; // sends per track
+      static final int REMOTE_CONTROL_COUNT = 8; // RC page size and encoder layout
+      static final int DEVICE_BANK_SIZE     = 3; // device bank window
+      static final int TRACK_BANK_SIZE      = 3; // track bank window
+   }
+
   public AtomSQExtension(final AtomSQExtensionDefinition definition, final ControllerHost host)
    {
       super(definition, host);
@@ -40,7 +49,7 @@ public class AtomSQExtension extends ControllerExtension
    public void init()
    {
       mHost = getHost();
-      DM = new DisplayMode();
+      displayMode = new DisplayMode();
      
       //v1.1 defining the donothing class I had to create for soem buttons...
       mDoNothing = new DoNothing();
@@ -55,11 +64,11 @@ public class AtomSQExtension extends ControllerExtension
       mMidiOut = mHost.getMidiOutPort(0);
       mMidiIn = mHost.getMidiInPort(0);
       //HINT: Notes not playing? these values are configured for CH 10 on the midi controller, which is the default. If this is not set, close BW, then reset in the generic controller menu!
-      mMidiIn.createNoteInput (hH.DEV_NAME, hH.NOTE_ON, hH.NOTE_OFF, hH.NOTE_MOD, hH.NOTE_BEND, hH.NOTE_PRES);
+      mMidiIn.createNoteInput (hardwareHandler.DEV_NAME, hardwareHandler.NOTE_ON, hardwareHandler.NOTE_OFF, hardwareHandler.NOTE_MOD, hardwareHandler.NOTE_BEND, hardwareHandler.NOTE_PRES);
 
       //Cursor Track / Device stuff
       //the first int here dictates the number of sends! this is different than the arrainger track itself, so the number of sends on the actual track are not relevant.
-      mCursorTrack = mHost.createCursorTrack(6, 0);
+      mCursorTrack = mHost.createCursorTrack(LayerCounts.SEND_COUNT, 0);
       mCursorTrack.solo().markInterested();
       mCursorTrack.mute().markInterested();
       mCursorTrack.arm().markInterested();
@@ -82,7 +91,7 @@ public class AtomSQExtension extends ControllerExtension
       mMasterTrack.volume().markInterested();
 
       //Cursor HW Layout creation
-      mCursorDevice = mCursorTrack.createCursorDevice("Current", "Current", 8,  CursorDeviceFollowMode.FOLLOW_SELECTION);
+      mCursorDevice = mCursorTrack.createCursorDevice("Current", "Current", LayerCounts.REMOTE_CONTROL_COUNT, CursorDeviceFollowMode.FOLLOW_SELECTION);
       mCursorDevice.isEnabled ().markInterested ();
       mCursorDevice.isWindowOpen ().markInterested ();
       mCursorDevice.name().markInterested();
@@ -120,7 +129,7 @@ public class AtomSQExtension extends ControllerExtension
       mBrowserDevType.exists().markInterested();
      
       //Device Bank
-      mCDLDBnk = mCursorTrack.createDeviceBank(3);
+      mCDLDBnk = mCursorTrack.createDeviceBank(LayerCounts.DEVICE_BANK_SIZE);
       mCDLDBnk.canScrollBackwards().markInterested();
       mCDLDBnk.canScrollForwards().markInterested();
       mCDLDBnk.scrollPosition().markInterested();
@@ -141,7 +150,7 @@ public class AtomSQExtension extends ControllerExtension
       });
 
       //Track Bank
-      mTrackBank = mHost.createTrackBank(3,0,0,true);
+      mTrackBank = mHost.createTrackBank(LayerCounts.TRACK_BANK_SIZE,0,0,true);
       mTrackBank.followCursorTrack(mCursorTrack);
       mTrackBank.canScrollBackwards().markInterested();
       mTrackBank.canScrollForwards().markInterested();
@@ -168,8 +177,8 @@ public class AtomSQExtension extends ControllerExtension
 
       //Remote Control Pages
       //v1.1 this is the other version, which allows for using all remote pages
-      mRemoteControls = mCursorDevice.createCursorRemoteControlsPage(8);
-      mRemoteControls.setHardwareLayout(HardwareControlType.ENCODER, 8);
+      mRemoteControls = mCursorDevice.createCursorRemoteControlsPage(LayerCounts.REMOTE_CONTROL_COUNT);
+      mRemoteControls.setHardwareLayout(HardwareControlType.ENCODER, LayerCounts.REMOTE_CONTROL_COUNT);
       //NEW SHIZ
       //trying to refresh the pages of remote controls...
       mRemoteControls.selectedPageIndex().markInterested();
@@ -194,10 +203,6 @@ public class AtomSQExtension extends ControllerExtension
       //API Hardware surface
       inithardwareSurface(mHost);
 
-      //Modes
-      //TODO this does not have any effect it seems. Still need to force the app to select the first track on start to get the ball rolling.
-      mApplication.selectFirst();
-      
       //V1.1 creates the popup browser targets for the different modes of the browser to map to.
       createBrowserTargets();
 
@@ -207,11 +212,11 @@ public class AtomSQExtension extends ControllerExtension
       initLayers(); 
     
       //as a value observer, this is evaluated AFTER the init is completed. this is where, f.e. the Baselayer was being re-activated during startup. 
-      //TODO: is this possible without the value observer defined here? This is the only time this option is used...
+   
       mPopupBrowser.exists().addValueObserver(exists -> {
          if (exists)
          {
-            DM.BrowserMode();
+            displayMode.BrowserMode();
             activateLayer(mBrowserLayer, null);
          }
          else{
@@ -221,15 +226,7 @@ public class AtomSQExtension extends ControllerExtension
             mSamplesBrowserLayer.deactivate();
             mDeviceBrowserLayer.deactivate();
             activateLayer(mLastLayer, null);
-            //TODO this is ugly and manual, but it should work. I cannot get a good logic to do this.
-            if (mLastLayer == mInstLayer){DM.InstMode();}
-            if (mLastLayer == mInst2Layer){DM.Inst2Mode();}
-            if (mLastLayer == mSongLayer){DM.SongMode();}
-            if (mLastLayer == mSong2Layer){DM.Song2Mode();}
-            if (mLastLayer == mEditLayer){DM.EditMode();}
-            if (mLastLayer == mUserLayer){DM.UserMode();}
-            //V1.1 adding for new layer
-            if (mLastLayer == mInstEmptyLayer){DM.InstEmptyMode();}
+            displayMode.applyMode(displayMode.lastMode);
          }
             
       });
@@ -240,9 +237,9 @@ public class AtomSQExtension extends ControllerExtension
       mHost.println("INIT: mCursorDevice is currently " +mdname);
 
       //these HAVE to stay at the bottom! this does allow the package file to use "this" to access the variable tho!
-      DM.start(this);
-      DM.initHW();
-      //DM.InstMode();
+      displayMode.start(this);
+      displayMode.initHW();
+      //displayMode.InstMode();
 
 
 
@@ -275,61 +272,61 @@ public class AtomSQExtension extends ControllerExtension
       surface.setPhysicalSize(400, 200);
 
       //Shift
-      mShiftButton = createToggleButton("shift", hH.CC_SHIFT, hH.ORANGE);
+      mShiftButton = createToggleButton("shift", hardwareHandler.CC_SHIFT, hardwareHandler.ORANGE);
       mShiftButton.setLabel("Shift");
 
       // NAV section
-      mUpButton = createToggleButton("up", hH.CC_UP, hH.ORANGE);
+      mUpButton = createToggleButton("up", hardwareHandler.CC_UP, hardwareHandler.ORANGE);
       mUpButton.setLabel("Up");
-      mDownButton = createToggleButton("down", hH.CC_DOWN, hH.ORANGE);
+      mDownButton = createToggleButton("down", hardwareHandler.CC_DOWN, hardwareHandler.ORANGE);
       mDownButton.setLabel("Down");
-      mLeftButton = createToggleButton("left", hH.CC_LEFT, hH.ORANGE);
+      mLeftButton = createToggleButton("left", hardwareHandler.CC_LEFT, hardwareHandler.ORANGE);
       mLeftButton.setLabel("Left");
-      mRightButton = createToggleButton("right", hH.CC_RIGHT, hH.ORANGE);
+      mRightButton = createToggleButton("right", hardwareHandler.CC_RIGHT, hardwareHandler.ORANGE);
       mRightButton.setLabel("Right");
-      mBackButton = createToggleButton("back", hH.CC_BACK, hH.ORANGE);
+      mBackButton = createToggleButton("back", hardwareHandler.CC_BACK, hardwareHandler.ORANGE);
       mBackButton.setLabel("Back");
-      mForwardButton = createToggleButton("forward", hH.CC_FORWARD, hH.ORANGE);
+      mForwardButton = createToggleButton("forward", hardwareHandler.CC_FORWARD, hardwareHandler.ORANGE);
       mForwardButton.setLabel("Forward");
 
       // TRANS section
-      mClickCountInButton = createToggleButton("click_count_in", hH.CC_METRONOME, hH.BLUE);
+      mClickCountInButton = createToggleButton("click_count_in", hardwareHandler.CC_METRONOME, hardwareHandler.BLUE);
       mClickCountInButton.setLabel("Click\nCount in");
-      mRecordSaveButton = createToggleButton("record_save", hH.CC_REC, hH.RED);
+      mRecordSaveButton = createToggleButton("record_save", hardwareHandler.CC_REC, hardwareHandler.RED);
       mRecordSaveButton.setLabel("Record\nSave");
-      mPlayLoopButton = createToggleButton("play_loop", hH.CC_PLAY, hH.GREEN);
+      mPlayLoopButton = createToggleButton("play_loop", hardwareHandler.CC_PLAY, hardwareHandler.GREEN);
       mPlayLoopButton.setLabel("Play\nLoop");
-      mStopUndoButton = createToggleButton("stop_undo", hH.CC_STOP, hH.ORANGE);
+      mStopUndoButton = createToggleButton("stop_undo", hardwareHandler.CC_STOP, hardwareHandler.ORANGE);
       mStopUndoButton.setLabel("Stop\nUndo");
 
       // SONG section
-      mSongButton = createToggleButton("song", hH.CC_SONG, hH.ORANGE);
+      mSongButton = createToggleButton("song", hardwareHandler.CC_SONG, hardwareHandler.ORANGE);
       mSongButton.setLabel("SONG");
-      mEditorButton = createToggleButton("editor", hH.CC_EDIT, hH.ORANGE);
+      mEditorButton = createToggleButton("editor", hardwareHandler.CC_EDIT, hardwareHandler.ORANGE);
       mEditorButton.setLabel("Editor");
-      mInstButton = createToggleButton("inst", hH.CC_INST, hH.ORANGE);
+      mInstButton = createToggleButton("inst", hardwareHandler.CC_INST, hardwareHandler.ORANGE);
       mInstButton.setLabel("Inst");
-      mUserButton = createToggleButton("user", hH.CC_USER, hH.ORANGE);
+      mUserButton = createToggleButton("user", hardwareHandler.CC_USER, hardwareHandler.ORANGE);
       mUserButton.setLabel("User");
-       HardwareButton mAButton = createToggleButton("a", hH.CC_BTN_A, hH.RED);
+       HardwareButton mAButton = createToggleButton("a", hardwareHandler.CC_BTN_A, hardwareHandler.RED);
       mAButton.setLabel("A");
 
       //Buttons
-      m1Button = createToggleButton("1", hH.CC_BTN_1, hH.ORANGE);
+      m1Button = createToggleButton("1", hardwareHandler.CC_BTN_1, hardwareHandler.ORANGE);
       m1Button.setLabel ("Btn 1");
-      m2Button = createToggleButton("2", hH.CC_BTN_2, hH.ORANGE);
+      m2Button = createToggleButton("2", hardwareHandler.CC_BTN_2, hardwareHandler.ORANGE);
       m2Button.setLabel ("Btn 2");
-      m3Button = createToggleButton("3", hH.CC_BTN_3, hH.ORANGE);
+      m3Button = createToggleButton("3", hardwareHandler.CC_BTN_3, hardwareHandler.ORANGE);
       m3Button.setLabel ("Btn 3");
-      m4Button = createToggleButton("4", hH.CC_BTN_4, hH.ORANGE);
+      m4Button = createToggleButton("4", hardwareHandler.CC_BTN_4, hardwareHandler.ORANGE);
       m4Button.setLabel ("Btn 4");
-      m5Button = createToggleButton("5", hH.CC_BTN_5, hH.ORANGE);
+      m5Button = createToggleButton("5", hardwareHandler.CC_BTN_5, hardwareHandler.ORANGE);
       m5Button.setLabel ("Btn 5");
-      m6Button = createToggleButton("6", hH.CC_BTN_6, hH.ORANGE);
+      m6Button = createToggleButton("6", hardwareHandler.CC_BTN_6, hardwareHandler.ORANGE);
       m6Button.setLabel ("Btn 6");
 
       //Encoders
-      for (int i = 0; i < 9; i++)
+      for (int i = 0; i < EncoderConfig.COUNT; i++)
       {
          createEncoder(i);
       }
@@ -401,14 +398,14 @@ public class AtomSQExtension extends ControllerExtension
       button.pressedAction().setActionMatcher(mMidiIn
          .createActionMatcher(midiExpressions.createIsCCExpression(0, controlNumber) + " && data2 > 0"));
       button.releasedAction().setActionMatcher(mMidiIn.createCCActionMatcher(0, controlNumber, 0));
-      button.setLabelColor(hH.BLACK);
+      button.setLabelColor(hardwareHandler.BLACK);
 
       return button;
    }
 
    private void createEncoder(final int index)
    {
-      assert index >= 0 && index < 8;
+      assert index >= 0 && index < LayerCounts.REMOTE_CONTROL_COUNT;
 
       final RelativeHardwareKnob encoder = mHardwareSurface
          .createRelativeHardwareKnob("encoder" + (index + 1));
@@ -419,11 +416,11 @@ public class AtomSQExtension extends ControllerExtension
       //here you can adjust the last number to adjust the encoder sensitivity wthin BW. Smaller numbers are jumpy, but move faster
       //the knobs ARE speed sensitive
       if (index <= 7){
-      encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, hH.CC_ENCODER_1 + index, 100));
+      encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, hardwareHandler.CC_ENCODER_1 + index, EncoderConfig.SENSITIVITY_NORMAL));
       }
       //as the CC for encoder 9 is not sequencial, have to do it seperately.
       else {
-        encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, hH.CC_ENCODER_9, 127));
+        encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, hardwareHandler.CC_ENCODER_9, EncoderConfig.SENSITIVITY_STEPPED));
         //this could be worked on...the stepped encoder does not move as smoothly in BW as the others.
        // encoder.setStepSize(4.0);
 
@@ -712,16 +709,16 @@ public class AtomSQExtension extends ControllerExtension
          //for modes with multiple pages, add them in REVERSE order!
          else if (mInst3Layer.isActive()) {
             activateLayer(mInst2Layer, mInstLayer);
-            DM.Inst2Mode();
+            displayMode.Inst2Mode();
          }
          else if (mInst2Layer.isActive()) {
             activateLayer(mInstLayer, null);
-            DM.InstMode();
+            displayMode.InstMode();
          }
 
          else if (mSong2Layer.isActive()){
             activateLayer(mSongLayer, null);
-            DM.SongMode();
+            displayMode.SongMode();
          }
          
       });
@@ -734,19 +731,19 @@ public class AtomSQExtension extends ControllerExtension
          //for modes with multiple pages, add them in REVERSE order!
          else if (mInst2Layer.isActive()) {
             activateLayer(mInst3Layer, mInstLayer);
-            DM.Inst3Mode();
+            displayMode.Inst3Mode();
 
          }
 
          else if (mInstLayer.isActive()) {
            activateLayer(mInst2Layer, mInstLayer);
-            DM.Inst2Mode();
+            displayMode.Inst2Mode();
          
          }
 
          else if (mSongLayer.isActive()){
            activateLayer(mSong2Layer, mSongLayer);
-            DM.Song2Mode();
+            displayMode.Song2Mode();
          }
 
       });
@@ -754,29 +751,29 @@ public class AtomSQExtension extends ControllerExtension
       //Menu Buttons
       mBaseLayer.bindPressed(mSongButton, () -> {
          activateLayer(mSongLayer, null);
-         DM.SongMode(); 
+         displayMode.SongMode(); 
          });
       
       mBaseLayer.bindPressed(mInstButton, () -> {
          //v1.1 adding logic for empty layer
          if(mCursorDevice.exists().getAsBoolean()){
          activateLayer(mInstLayer, null);
-         DM.InstMode();
+         displayMode.InstMode();
          }
          else{activateLayer(mInstEmptyLayer, null);
-         DM.InstEmptyMode();
+         displayMode.InstEmptyMode();
          }
 
       });
 
       mBaseLayer.bindPressed(mEditorButton, () -> {
          activateLayer(mEditLayer, null);
-         DM.EditMode();
+         displayMode.EditMode();
          });
 
       mBaseLayer.bindPressed(mUserButton, () -> {
          activateLayer(mUserLayer, null);
-         DM.UserMode();
+         displayMode.UserMode();
          });
       
       //Transport
@@ -803,7 +800,8 @@ public class AtomSQExtension extends ControllerExtension
       }, mTransport.isArrangerRecordEnabled());
 
       //Nav buttons
-      //TODO if there is a way to identify the panels by name, this would be better than above/below
+      // API 18 has no panel-by-name targeting — focusPanelAbove/Below is the only option.
+      // Possible bug: mDownButton calls focusPanelAbove() instead of focusPanelBelow() — verify against hardware behaviour.
       mBaseLayer.bindToggle(mUpButton, mCursorTrack.selectPreviousAction(), mCursorTrack.hasPrevious());
       mBaseLayer.bindToggle(mDownButton, mCursorTrack.selectNextAction(), mCursorTrack.hasNext());
       mBaseLayer.bindPressed(mUpButton, () -> mApplication.focusPanelAbove());
@@ -851,7 +849,7 @@ public class AtomSQExtension extends ControllerExtension
       mSongLayer.bind (mEncoders[7], mCursorTrack.volume());
 
       //Send Encoders
-      for (int i = 0; i < 6 ; i++)
+      for (int i = 0; i < LayerCounts.SEND_COUNT; i++)
       {
          final Parameter parameter = mSendBank.getItemAt(i);
          final RelativeHardwareKnob encoder = mEncoders[i];
@@ -896,7 +894,7 @@ public class AtomSQExtension extends ControllerExtension
       mInstLayer.bindToggle(m6Button, mRemoteControls.selectNextAction(), mRemoteControls.hasNext());
         
       //Encoders
-      for (int i = 0; i < 8; i++)
+      for (int i = 0; i < LayerCounts.REMOTE_CONTROL_COUNT; i++)
       {
          final Parameter parameter = mRemoteControls.getParameter(i);
          final RelativeHardwareKnob encoder = mEncoders[i];
@@ -986,9 +984,8 @@ public class AtomSQExtension extends ControllerExtension
       //V1.1 adding browser mode toggles to arrow keys
       mBrowserLayer.bindToggle(mLeftButton, () -> mPopupBrowser.selectedContentTypeIndex().inc(-1),() -> (mPopupBrowser.selectedContentTypeIndex().getAsInt() != 0) );
       mBrowserLayer.bindToggle(mRightButton, () -> mPopupBrowser.selectedContentTypeIndex().inc(1), () -> (mPopupBrowser.selectedContentTypeIndex().getAsInt() != 4) );
-      //TODO two ways to do this...one in-line and the other with a boolean supplier....should pick one.
-      mBrowserLayer.bindToggle(mUpButton,() -> mDoNothing.run(),  () -> false);
-      mBrowserLayer.bindToggle(mDownButton,() -> mDoNothing.run(), mLightsOff);
+      mBrowserLayer.bindToggle(mUpButton,   () -> mDoNothing.run(), () -> false);
+      mBrowserLayer.bindToggle(mDownButton, () -> mDoNothing.run(), () -> false);
    }
 
    //Note to self: these further assignments could be left as adjustments to the mBrowser layer..it seems to work. Not sure if this is an advantage anywhere vs new layers. 
@@ -1077,13 +1074,13 @@ public class AtomSQExtension extends ControllerExtension
       mSamplesBrowserLayer.bind(mEncoders[7], RHCBresult);
    }
 
-   //TODO: remove this and all references
+   // v2.0 RC display layer — bindings not yet implemented
    private void createRCLayer()
    {
-   //V2.0 display update layer for controller assignments and values
    }
 
-   //TODO what is this really doing? can this be cleaned up with the newer browser setup?
+   // Opens the browser at the correct insertion point: replaces the current device if one exists,
+   // otherwise adds to the end of the device chain on an empty track.
    private void startPresetBrowsing()
    {
       if (mCursorDevice.exists().get())
@@ -1120,12 +1117,12 @@ public class AtomSQExtension extends ControllerExtension
       if(mCursorDevice.exists().getAsBoolean() && mInstEmptyLayer.isActive()){
             mHost.println("FLUSH: mDevice no longer empty");
             activateLayer(mInstLayer,null);
-            DM.InstMode();
+            displayMode.InstMode();
          }
       if((mInstLayer.isActive() || mInst2Layer.isActive()) && !mCursorDevice.exists().getAsBoolean()){
             mHost.println("FLUSH: mDevice is now empty");
             activateLayer(mInstEmptyLayer,null);
-            DM.InstEmptyMode();
+            displayMode.InstEmptyMode();
          }
 
       //V1.1 Preset Browser: added this to activate layers in particular when switching when the browser is already open.
@@ -1146,7 +1143,7 @@ public class AtomSQExtension extends ControllerExtension
 
 
       mHardwareSurface.updateHardware();
-      DM.updateDisplay();
+      displayMode.updateDisplay();
 
       //V1.1 troubleshooting for display mode issues
       // String mcdname = mCursorDevice.name().get();
@@ -1231,9 +1228,9 @@ public class AtomSQExtension extends ControllerExtension
    private CursorBrowserFilterItem mBrowserLocation;
    private CursorBrowserFilterItem mBrowserFileType;
 
-   private DisplayMode DM;
+   private DisplayMode displayMode;
    public ControllerHost mHost;
-   private static final HardwareHandler hH = new HardwareHandler();
+   private static final HardwareHandler hardwareHandler = new HardwareHandler();
    private MasterTrack mMasterTrack;
    private SendBank mSendBank;
    public int sends;
@@ -1265,7 +1262,7 @@ public class AtomSQExtension extends ControllerExtension
    private HardwareButton m4Button;
    private HardwareButton m5Button;
    private HardwareButton m6Button;
-   private final RelativeHardwareKnob[] mEncoders = new RelativeHardwareKnob[9];
+   private final RelativeHardwareKnob[] mEncoders = new RelativeHardwareKnob[EncoderConfig.COUNT];
    private final Layers mLayers = new Layers(this)
    {
       @Override
@@ -1289,7 +1286,6 @@ public class AtomSQExtension extends ControllerExtension
    public Integer mBrowserlayercontentindex;
 
    private DoNothing mDoNothing;
-   private BooleanSupplier mLightsOff;
 
    public String mEncName;
   public String mEncValue;
