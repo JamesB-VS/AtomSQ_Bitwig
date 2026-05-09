@@ -109,11 +109,11 @@ public class DisplayMode
       dApplication = Ext.mApplication;
       dCursorTrack = Ext.mCursorTrack;
       dCursorDevice = Ext.mCursorDevice;
-      dBrowserResult = Ext.mBrowserResult;
+      dBrowserResult = Ext.browserHandler.mBrowserResult;
       //V1.1
       dInstEmptyLayer = Ext.mInstEmptyLayer;
       dDeviceBrowserLayer = Ext.mDeviceBrowserLayer;
-      dPopupBrowser = Ext.mPopupBrowser;
+      dPopupBrowser = Ext.browserHandler.mPopupBrowser;
       //V2.0
        dRCLayer = Ext.mRCLayer;
 
